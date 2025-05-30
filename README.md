@@ -30,10 +30,24 @@ npm run test
 node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/
 ````
 
-Так же можно выполнить множнственное скачивание видео:
+Скрипт получит информацию о видео и предложит выбрать разрешение, в котором загружать. По умолчанию загрузка будет 
+выполнена в 5-ть параллельных потоков. Количество потоков можно указать опцией `-p <число>`. 
+
+Так же можно выполнить множественное скачивание видео:
 
 ````bash
-node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ https://rutube.ru/video/1c62a5d0f5a87bd2028a5e81eb1d70ba/ https://rutube.ru/video/3219fef0568d88d9bcd4567aef9fc1ea/
+node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ https://vkvideo.ru/video-18255722_456244249 https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8
 ````
+
+Для первого видео скрипт спросит о качестве. Для последующих будет спрашивать только в том случае, если в нём нет ранее выбранного.
+
+Так-же можно загружать видео из других источников и указывать имя результирующего файла:
+
+````bash
+node index.js https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8 -t 'какое-то название'
+````
+
+На данный момент поддерживаются `rutube`, `aser.pro`, `vkvideo.ru`
+
 
 Результат выполнения виден на скриншоте. Видео сохраняется в папке `video` расположенной в директории рядом с исполняемым скриптом.
