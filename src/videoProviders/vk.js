@@ -87,7 +87,7 @@ module.exports = {
 		let text = await vkVideoInfo.textConverted();
 
 		const json = JSON.parse(text.replace("<!--", ""));
-		cfg.title = sanitize(emojiStrip(json.payload[1][0])).replace(/\s+/g, " ");
+		cfg.title = sanitize(emojiStrip(cfg.title ?? json.payload[1][0])).replace(/\s+/g, " ");
 
 		const options = { headers };
 
