@@ -5,7 +5,6 @@ const fs = require("node:fs");
 
 const fetch = require("node-fetch");
 const _colors = require("ansi-colors");
-const sanitize = require("sanitize-filename");
 const splitFile = require("split-file");
 
 const { createDir, deleteFiles, deleteFile } = require("./fsUtils");
@@ -84,14 +83,14 @@ exports.downloadFile = async function (cfg, segments, options) {
 	progress.update(existsCount(arrFiles), { filename: " " });
 	await delay(1000);
 	progress.stop();
-	const saveTitle = sanitize(cfg.title);
+	const saveTitle = cfg.title;
 	const ext = path.extname(segments[0]);
 	console.log("\u00A0");
 	console.log(
 		"COMBINING FILES:",
 		_colors.yellowBright(`${arrFiles.length}`),
 		"FILES INTO A",
-		_colors.yellowBright(`"${saveTitle}${ext}"`),
+		_colors.yellowBright(`${saveTitle}${ext}`),
 		"PLEASE WAIT...",
 		"\n"
 	);

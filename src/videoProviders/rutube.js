@@ -2,6 +2,8 @@ const fetch = require("node-fetch");
 const { getManifest } = require("../m3u8Utils");
 const { selectVideoQuality } = require("../dialogue");
 const URL = require("node:url");
+const emojiStrip = require('emoji-strip');
+const sanitize = require("sanitize-filename");
 const { downloadFile } = require("../downloadFile");
 
 const regex_rutube = /^https?:\/\/rutube\.ru\/video\/(\w+)/;
@@ -21,7 +23,7 @@ module.exports = {
 		}
 
 		const json = await resp.json();
-		cfg.title = cfg.title ?? json.title;
+		cfg.title = sanitize(emojiStrip(cfg.title ?? json.title)).replace(/\s+/g, " ");
 		const videoInfo = await getManifest(
 			json["video_balancer"]["m3u8"],
 			"get video info:"

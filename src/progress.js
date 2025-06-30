@@ -44,7 +44,7 @@ function formatBar(optionsBar, paramsBar, payloadBar) {
 		`/${paramsBar.total}` +
 		" " +
 		_colors.white("|") +
-		" active files: " +
+		" Active files: " +
 		`${payloadBar.filename}`;
 	return barStr;
 }

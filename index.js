@@ -12,6 +12,9 @@
 const { rl } = require("./src/dialogue");
 const { parseArgs } = require("./src/parseArgs");
 
+
+const globalTitle = process.title;
+
 async function run() {
 	const state = parseArgs(process.argv);
 	while (state.currentFileIndex < state.files.length) {
@@ -42,5 +45,6 @@ run()
 		for (let file of state.files) console.log(" +", file.name);
 	})
 	.finally(() => {
+		process.title = globalTitle;
 		rl.close();
 	});
