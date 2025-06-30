@@ -1,14 +1,15 @@
 *
 !/.github
 !/src
+!/src/**
 !/.gitattributes
 !/.gitignore
 !/.npmrc
-!/arhiver.js
+!/archiver.js
 !/index.js
 !/LICENSE
 !/package.json
 !/README.md
 !/rutube-dl.sublime-project
 !/screen.png
-/.npmrc
+!/.npmrc

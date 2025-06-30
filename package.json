@@ -1,0 +1,52 @@
+{
+	"name": "rutube-downloader",
+	"description": "Скачивание видео с RuTube",
+	"version": "2.1.0",
+	"main": "index.js",
+	"scripts": {
+		"test": "npm i"
+	},
+	"author": {
+		"name": "ProjectSoft",
+		"email": "projectsoft2009@yandex.ru"
+	},
+	"contributors": [
+		{
+			"name": "valera-steb",
+			"email": "valera.steb@yandex.com"
+		}
+	],
+	"license": "MIT",
+	"dependencies": {
+		"ansi-colors": "4.1.3",
+		"cli-progress": "3.12.0",
+		"encoding": "0.1.13",
+		"m3u8-parser": "7.1.0",
+		"node-fetch": "2.7.0",
+		"sanitize-filename": "1.6.3",
+		"split-file": "2.3.0"
+	},
+	"devDependencies": {
+		"mime-types": "^3.0.1",
+		"prettier": "2.8.0"
+	},
+	"prettier": {
+		"endOfLine": "crlf",
+		"overrides": [
+			{
+				"files": [
+					"**/*.js",
+					"**/*.ts",
+					"**/*.tsx"
+				],
+				"options": {
+					"tabWidth": 4,
+					"semi": true,
+					"jsxBracketSameLine": true,
+					"arrowParens": "avoid",
+					"parser": "typescript"
+				}
+			}
+		]
+	}
+}
