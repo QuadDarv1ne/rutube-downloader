@@ -117,7 +117,7 @@ module.exports = {
 	},
 };
 
-const regexVk = /^https?:\/\/vkvideo\.ru\/video(-\d+_\d+)/;
+const regexVk = /^https?:\/\/vkvideo\.ru\/video(-?\d+_\d+)/;
 
 function extractCookies(setCookie, cookies = {}, domain) {
 	for (let pair of setCookie) {
