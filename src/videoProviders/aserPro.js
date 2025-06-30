@@ -14,7 +14,8 @@ module.exports = {
 			cfg,
 			videoInfo["playlists"]
 		);
-
+		// Исправить вид url
+		// В windows path.join выставляет слеши в обратном направлении
 		const segmentsUrl = path.join(path.dirname(cfg.url), playlist);
 
 		const segmentsInfo = await getManifest(
