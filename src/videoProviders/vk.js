@@ -7,6 +7,60 @@ const { getManifest } = require("../m3u8Utils");
 const { selectVideoQuality } = require("../dialogue");
 const { downloadFile } = require("../downloadFile");
 
+/**
+ * Видео от пользователя
+ * https://vk.com/video643853031_456271286
+ * https://vk.ru/video643853031_456271286
+ * https://vkvideo.ru/video643853031_456271286
+ * 
+ * Видео от канала
+ * https://vk.com/video-18255722_456244249
+ * https://vk.ru/video-18255722_456244249
+ * https://vkvideo.ru/video-18255722_456244249
+ */
+const regexVk = /^https?:\/\/(?:vk|vkvideo)\.(?:ru|com)\/video(-?\d+_\d+)/;
+
+const extractCookies = function(setCookie, cookies = {}, domain) {
+	for (let pair of setCookie) {
+		const res = cookieReg.exec(pair);
+		const domainRes = cookieDomainReg.exec(pair);
+		const cookieDomain = domainRes?.length > 0 ? domainRes[1] : domain;
+
+		if (!cookies[cookieDomain]) cookies[cookieDomain] = {};
+
+		if (res[2] === "DELETED") {
+			delete cookies[cookieDomain][res[1]];
+		} else {
+			cookies[cookieDomain][res[1]] = res[2];
+		}
+	}
+	return cookies;
+}
+
+const cookieReg = /([^=]+)=([^;]+)/;
+const cookieDomainReg = /domain=([^;]+)/;
+
+const encodeCookies = (c, domain) =>
+	Object.entries(c[domain] ?? {})
+		.map(([key, value]) => `${key}=${value}`)
+		.join("; ");
+
+const browserHeaders = {
+	accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+	"accept-encoding": "gzip, deflate, br, zstd",
+	"sec-ch-ua":
+		'"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+	"sec-ch-ua-mobile": "?0",
+	"sec-ch-ua-platform": "Windows",
+	"sec-fetch-dest": "document",
+	"sec-fetch-mode": "navigate",
+	"sec-fetch-site": "none",
+	"sec-fetch-user": "?1",
+	"upgrade-insecure-requests": "1",
+	"user-agent":
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36",
+};
+
 module.exports = {
 	mayUse: url => regexVk.test(url),
 
@@ -115,47 +169,4 @@ module.exports = {
 		const name = await downloadFile(cfg, segmentsUrls, options);
 		return [name, quality];
 	},
-};
-
-const regexVk = /^https?:\/\/vkvideo\.ru\/video(-?\d+_\d+)/;
-
-function extractCookies(setCookie, cookies = {}, domain) {
-	for (let pair of setCookie) {
-		const res = cookieReg.exec(pair);
-		const domainRes = cookieDomainReg.exec(pair);
-		const cookieDomain = domainRes?.length > 0 ? domainRes[1] : domain;
-
-		if (!cookies[cookieDomain]) cookies[cookieDomain] = {};
-
-		if (res[2] === "DELETED") {
-			delete cookies[cookieDomain][res[1]];
-		} else {
-			cookies[cookieDomain][res[1]] = res[2];
-		}
-	}
-	return cookies;
-}
-
-const cookieReg = /([^=]+)=([^;]+)/;
-const cookieDomainReg = /domain=([^;]+)/;
-
-const encodeCookies = (c, domain) =>
-	Object.entries(c[domain] ?? {})
-		.map(([key, value]) => `${key}=${value}`)
-		.join("; ");
-
-const browserHeaders = {
-	accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-	"accept-encoding": "gzip, deflate, br, zstd",
-	"sec-ch-ua":
-		'"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
-	"sec-ch-ua-mobile": "?0",
-	"sec-ch-ua-platform": "Windows",
-	"sec-fetch-dest": "document",
-	"sec-fetch-mode": "navigate",
-	"sec-fetch-site": "none",
-	"sec-fetch-user": "?1",
-	"upgrade-insecure-requests": "1",
-	"user-agent":
-		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36",
 };
