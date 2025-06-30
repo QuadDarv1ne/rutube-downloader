@@ -1,5 +1,19 @@
 const readline = require("readline");
 
+const findMaxIndex = function(arr) {
+	let max = arr[0],
+		maxIndex = 0;
+	for (let i = 1, l = arr.length; i < l; i++) {
+		const el = arr[i];
+		if (el > max) {
+			max = el;
+			maxIndex = i;
+		}
+	}
+
+	return maxIndex;
+}
+
 module.exports = {
 	rl: readline.createInterface({
 		input: process.stdin,
@@ -38,18 +52,3 @@ module.exports = {
 		);
 	},
 };
-
-function findMaxIndex(arr) {
-	let max = arr[0],
-		maxIndex = 0;
-
-	for (let i = 1, l = arr.length; i < l; i++) {
-		const el = arr[i];
-		if (el > max) {
-			max = el;
-			maxIndex = i;
-		}
-	}
-
-	return maxIndex;
-}

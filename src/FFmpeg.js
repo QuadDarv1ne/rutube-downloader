@@ -2,11 +2,19 @@ const { exec } = require("node:child_process");
 
 let path;
 
+
+const probePath = path =>
+	new Promise(resolve => {
+		exec(`${path} -version`, err => {
+			resolve(!err);
+		});
+	});
+
 exports.execFFmpeg = async (input, output) => {
 	if (!path) {
 		path = "ffmpeg";
 		if (!(await probePath(path))) {
-			path = "C:/Programs/ffmpeg/bin/ffmpeg";
+			path = "../bin/ffmpeg";
 
 			if (!(await probePath(path))) throw new Error("ffmpeg не найден");
 		}
@@ -23,10 +31,3 @@ exports.execFFmpeg = async (input, output) => {
 		});
 	});
 };
-
-const probePath = path =>
-	new Promise(resolve => {
-		exec(`${path} -version`, err => {
-			resolve(!err);
-		});
-	});

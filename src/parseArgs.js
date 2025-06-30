@@ -11,8 +11,7 @@ exports.parseArgs = args => {
 		parallelSegments: 5,
 		manualVideoQuality: false,
 	};
-	// Очищаем консоль
-	console.clear();
+
 	if (args.length < 3) {
 		showHelp();
 		process.exit(0);
