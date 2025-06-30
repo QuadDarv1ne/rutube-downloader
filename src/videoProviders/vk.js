@@ -100,7 +100,7 @@ module.exports = {
 		);
 
 		const myURL = URL.parse(hlsUrl);
-		const segmentsBase = myURL.protocol + "//" + myURL.host + playlist;
+		const segmentsBase = URL.parse(myURL.protocol + "//" + myURL.host + playlist).href;
 
 		const segmentsInfo = await getManifest(
 			segmentsBase,
@@ -109,7 +109,7 @@ module.exports = {
 		);
 
 		const segmentsUrls = segmentsInfo["segments"].map(segment =>
-			path.join(segmentsBase, segment["uri"])
+			URL.parse(segmentsBase + segment["uri"]).href
 		);
 
 		const name = await downloadFile(cfg, segmentsUrls, options);

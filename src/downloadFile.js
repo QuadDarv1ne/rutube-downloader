@@ -21,6 +21,23 @@ const joinNames = list => ({ filename: list.join(", ") });
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+async function downloadSegment(segmentUrl, segmentFilePath, options) {
+	try {
+		let rs = await fetch(segmentUrl, options);
+		if (rs.ok) {
+			await streamPipeline(
+				rs.body,
+				fs.createWriteStream(segmentFilePath)
+			);
+			return null;
+		} else {
+			return new Error(`Ошибка загрузки: ${rs.status} ${rs.statusText}`);
+		}
+	} catch (e) {
+		return e;
+	}
+}
+
 exports.downloadFile = async function (cfg, segments, options) {
 	await createDir(cfg.video);
 	await deleteFiles(/^segment-.*\.ts/, cfg.video);
@@ -116,7 +133,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 		"TO:".padStart(16, " "),
 		_colors.yellowBright(videoFileName)
 	);
-	console.log(_colors.yellowBright("PLEASE WAIT...").padStart(16, " "));
+	console.log("PLEASE WAIT...".padStart(16, " "));
 	console.log("\u00A0");
 	const segmentsVideoFilePath = path.join(cfg.video, `${saveTitle}${ext}`);
 	try {
@@ -129,20 +146,3 @@ exports.downloadFile = async function (cfg, segments, options) {
 	console.log("_".padEnd(20, "_"));
 	return videoFileName;
 };
-
-async function downloadSegment(segmentUrl, segmentFilePath, options) {
-	try {
-		let rs = await fetch(segmentUrl, options);
-		if (rs.ok) {
-			await streamPipeline(
-				rs.body,
-				fs.createWriteStream(segmentFilePath)
-			);
-			return null;
-		} else {
-			return new Error(`Ошибка загрузки: ${rs.status} ${rs.statusText}`);
-		}
-	} catch (e) {
-		return e;
-	}
-}
