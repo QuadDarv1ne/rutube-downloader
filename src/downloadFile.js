@@ -26,7 +26,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 	await createDir(cfg.video);
 	await deleteFiles(/^segment-.*\.ts/, cfg.video);
 
-	console.log(" ");
+	console.log("\u00A0");
 	console.log(
 		"DOWNLOAD:".padStart(16, " "),
 		_colors.yellowBright(cfg.title), "\n"

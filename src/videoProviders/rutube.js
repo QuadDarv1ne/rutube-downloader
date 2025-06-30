@@ -4,6 +4,8 @@ const { selectVideoQuality } = require("../dialogue");
 const URL = require("node:url");
 const { downloadFile } = require("../downloadFile");
 
+const regex_rutube = /^https?:\/\/rutube\.ru\/video\/(\w+)/;
+
 module.exports = {
 	mayUse: url => regex_rutube.test(url),
 
@@ -12,10 +14,11 @@ module.exports = {
 		const resp = await fetch(
 			`https://rutube.ru/api/play/options/${m[1]}/?no_404=true&referer=https%3A%2F%2Frutube.ru`
 		);
-		if (!resp.ok)
+		if (!resp.ok) {
 			throw new Error(
 				`Не удалось загрузить информацию о видео: ${cfg.url} \r\n ${resp.status} ${resp.statusText}`
 			);
+		}
 
 		const json = await resp.json();
 		cfg.title = cfg.title ?? json.title;
@@ -47,5 +50,3 @@ module.exports = {
 		return [name, quality];
 	},
 };
-
-const regex_rutube = /^https?:\/\/rutube\.ru\/video\/(\w+)/;
