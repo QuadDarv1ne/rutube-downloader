@@ -44,7 +44,7 @@ run()
 	.then(state => {
 		console.clear();
 		console.log(`Загружено файлов:`, _colors.yellowBright(`${state.currentFileIndex}`));
-		for (let file of state.files) console.log(" +", _colors.yellowBright(file.name));
+		for (let file of state.files) console.log(_colors.cyan("+ ".padStart(17, " ")), _colors.yellowBright(file.name));
 	})
 	.finally(() => {
 		process.title = globalTitle;
