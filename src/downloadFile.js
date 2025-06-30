@@ -107,8 +107,10 @@ exports.downloadFile = async function (cfg, segments, options) {
 		"COMBINING FILES:",
 		_colors.yellowBright(`${arrFiles.length}`),
 		"FILES INTO A",
-		_colors.yellowBright(`${saveTitle}${ext}`),
-		"PLEASE WAIT...",
+		_colors.yellowBright(`${saveTitle}${ext}`)
+	);
+	console.log(
+		"PLEASE WAIT...".padStart(16, " "),
 		"\n"
 	);
 	await splitFile.mergeFiles(
@@ -127,7 +129,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 	await deleteFile(videoFilePath);
 	console.log(
 		"CONVERTING:".padStart(16, " "),
-		_colors.yellowBright(`"${saveTitle}${ext}"`)
+		_colors.yellowBright(`${saveTitle}${ext}`)
 	);
 	console.log(
 		"TO:".padStart(16, " "),

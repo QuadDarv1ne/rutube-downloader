@@ -9,6 +9,7 @@
  * node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8 -t 'Поднятие уровня в одиночку серия 01' https://rutube.ru/video/342af3c3cbba19c9a95252fc27bc60a4/ -p 10
  */
 
+const _colors = require("ansi-colors");
 const { rl } = require("./src/dialogue");
 const { parseArgs } = require("./src/parseArgs");
 
@@ -38,11 +39,12 @@ async function run() {
 	return state;
 }
 
+console.clear();
 run()
 	.then(state => {
 		console.clear();
-		console.log(`Загружено файлов: ${state.currentFileIndex}`);
-		for (let file of state.files) console.log(" +", file.name);
+		console.log(`Загружено файлов:`, _colors.yellowBright(`${state.currentFileIndex}`));
+		for (let file of state.files) console.log(" +", _colors.yellowBright(file.name));
 	})
 	.finally(() => {
 		process.title = globalTitle;
