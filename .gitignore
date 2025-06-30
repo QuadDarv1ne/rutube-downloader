@@ -3,6 +3,7 @@
 !/src
 !/.gitattributes
 !/.gitignore
+!/.npmrc
 !/arhiver.js
 !/index.js
 !/LICENSE
