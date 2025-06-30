@@ -13,5 +13,5 @@
 !/package.json
 !/README.md
 !/rutube-dl.sublime-project
-!/screen.png
 !/.npmrc
+!/*.png
