@@ -13,7 +13,9 @@ const _colors = require("ansi-colors");
 const { rl } = require("./src/dialogue");
 const { parseArgs } = require("./src/parseArgs");
 
-
+/**
+ * Получаем title процесса
+ */
 const globalTitle = process.title;
 
 async function run() {
@@ -38,12 +40,27 @@ async function run() {
 	}
 	return state;
 }
+/**
+ * Очищаем консоль
+ */
+console.clear();
 
-//console.clear();
+/**
+ * Перехват ошибок
+ */
+process.on('uncaughtException', (err) => {
+	console.log(err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+	console.log(_colors.redBright(reason.message));
+});
+/**
+ * Запускаем
+ */
 run()
 	.then(state => {
-		rl.close();
-		console.clear();
+		console.log("\u00A0");
 		console.log(`Загружено файлов:`, _colors.yellowBright(`${state.currentFileIndex}`));
 		for (let file of state.files) console.log(_colors.cyan("+ ".padStart(17, " ")), _colors.yellowBright(file.name));
 	})
@@ -57,4 +74,5 @@ run()
 		console.log("\u00A0\u00A0\u00A0" + _colors.bgBlue(  _colors.white("\u0020\u0023\u0421\u0432\u043e\u0438\u0445\u041d\u0435\u0411\u0440\u043e\u0441\u0430\u0435\u043c\u0020")) + "\u00A0");
 		console.log("\u00A0\u00A0\u00A0" + _colors.bgRed(   _colors.red(  "\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588")) + "\u00A0");
 		console.log("\u00A0");
+		rl.close();
 	});

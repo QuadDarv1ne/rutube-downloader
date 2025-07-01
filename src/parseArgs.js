@@ -1,5 +1,6 @@
 const path = require("node:path");
 const { selectVideoProvider } = require("./videoProviders");
+const _colors = require("ansi-colors");
 
 exports.parseArgs = args => {
 	const root = path.dirname(args[1]);
@@ -35,34 +36,36 @@ exports.parseArgs = args => {
 
 const help = [
 	" ",
-	"Использовать: node index.js url1 [url2] [url3 -t custom_title] [url4] [...] [-p 10] [-q]",
-	" ",
+	"Использовать:",
+	_colors.yellowBright("node index.js url1 [url2] [url3 -t custom_title] [url4] [...] [-p 10] [-q]"),
+	"",
 	"Опции:",
-	" -t <title> \t задать имя файла для предыдущего url",
-	" -p <int> \t количество одновременных загрузок, по умолчанию 5",
-	" -q \t\t скрипт будет спрашивать о том, какого качества видео загружать, по умолчанию выбирает наилучшее",
-	" -h \t\t отобразить справку",
+	" " + _colors.yellowBright("-t <title>") + " \t задать имя файла для предыдущего url",
+	" " + _colors.yellowBright("-p <int>") + " \t количество одновременных загрузок, по умолчанию 5",
+	" " + _colors.yellowBright("-q") + " \t\t скрипт будет спрашивать о том, какого качества видео загружать, по умолчанию выбирает наилучшее",
+	" " + _colors.yellowBright("-h") + " \t\t отобразить справку",
 	" ",
 	"Примеры использования:",
-	"+ загрузить видео с rutube, имя файла будет взято как у видео по ссылке, либо из аргумента",
-	"node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/",
-	" ",
-	"+ загрузить видео с vkvideo, имя файла будет взято как у видео по ссылке, либо из аргумента",
-	"node index.js https://vkvideo.ru/video-18255722_456244249",
-	" ",
-	"+ загрузить видео с aser.pro, имя файла будет взято из аргумента",
-	"node index.js https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8 -t 'Поднятие уровня в одиночку серия 01'",
-	" ",
-	"+ загрузить несколько файлов",
-	"node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ -t \"Отмеченный богом\"" +
+	"",
+	" + загрузить видео с rutube, имя файла будет взято как у видео по ссылке, либо из аргумента",
+	_colors.yellowBright("node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/"),
+	"",
+	" + загрузить видео с vkvideo, имя файла будет взято как у видео по ссылке, либо из аргумента",
+	_colors.yellowBright("node index.js https://vkvideo.ru/video-18255722_456244249"),
+	"",
+	" + загрузить видео с aser.pro, имя файла будет взято из аргумента",
+	_colors.yellowBright("node index.js https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8 -t \"Поднятие уровня в одиночку серия 01\""),
+	"",
+	" + загрузить несколько файлов",
+	_colors.yellowBright("node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ -t \"Отмеченный богом\"" +
 		" https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8 -t \"Поднятие уровня в одиночку серия 01\"" +
-		" https://vkvideo.ru/video-18255722_456244249 -t \"Скачено с VK\"",
-	" ",
-	"+ либо загрузить несколько файлов без параметров",
-	"node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/" +
+		" https://vkvideo.ru/video-18255722_456244249 -t \"Скачено с VK\""),
+	"",
+	" + либо загрузить несколько файлов без параметров",
+	_colors.yellowBright("node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/" +
 		" https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8" +
-		" https://vkvideo.ru/video-18255722_456244249",
-	" ",
+		" https://vkvideo.ru/video-18255722_456244249"),
+	"",
 ];
 
 function showHelp() {

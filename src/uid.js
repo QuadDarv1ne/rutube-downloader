@@ -1,7 +1,7 @@
-const allKeys =
-	"0123456789abcdefghigklmnopqrstuvwxyzABCDEFGHIGKLMNOPQRSTUVWXYZ";
+/**
+ * Возвращает дату вызова функции
+ * В нашем случае время начала работы с данными в момент запроса title для файла
+ */
+const allKeysBuilder = () => new Date().toLocaleString().replace(/\.|:/g, `-`).replace(/,\s+?/g, "_");
 
-const allKeysBuilder = key => () =>
-	key.replace(/\*/g, () => allKeys[(Math.random() * 62) | 0]);
-
-exports.uuid9 = allKeysBuilder("***-***-***");
+exports.uuid9 = allKeysBuilder;
