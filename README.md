@@ -49,7 +49,7 @@ node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ https://
 node index.js https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8 -t 'какое-то название'
 ````
 
-Или же для нескольких файлов с указанием имён результатирующих файлов и директорий:
+Или же для нескольких файлов с указанием имён результатирующих файлов (директорий):
 
 ````bash
 node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ -t "Трон отмеченный богом, 01 серия" https://vkvideo.ru/video-18255722_456244249 -t "Gorillaz (RADIO TAPOK)" https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8 -t "Поднятие уровня в одиночку"
