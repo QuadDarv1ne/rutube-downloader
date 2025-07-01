@@ -49,7 +49,18 @@ node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ https://
 node index.js https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8 -t 'какое-то название'
 ````
 
-На данный момент поддерживаются `rutube`, `aser.pro`, `vkvideo.ru`
+Или же для нескольких файлов с указанием имён результатирующих файлов и директорий:
 
+````bash
+node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ -t "Трон отмеченный богом, 01 серия" https://vkvideo.ru/video-18255722_456244249 -t "Gorillaz (RADIO TAPOK)" https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8 -t "Поднятие уровня в одиночку"
+````
 
 Результат выполнения виден на скриншоте. Видео сохраняется в папке `video` расположенной в директории рядом с исполняемым скриптом.
+
+В директории `video` видеофайлы сохраняются каждый в своей директории в зависимости от названия видео полученного из опций установленными пользователем параметрами `-t` или же из запросов к ссылкам на видео.
+
+![Скачивание видео с RuTube на NodeJS](screen-0003.png?raw=true)
+
+![Скачивание видео с RuTube на NodeJS](screen-0002.png?raw=true)
+
+На данный момент поддерживаются `rutube`, `aser.pro`, `vkvideo.ru`
