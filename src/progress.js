@@ -30,6 +30,10 @@ function formatBar(optionsBar, paramsBar, payloadBar) {
 	const percentage = Math.floor(paramsBar.progress * 100) + "";
 	const stopTime = parseInt(Date.now());
 	const elapsedTime = formatTime(Math.round(stopTime - paramsBar.startTime));
+	var payload = payloadBar.filename ? " " +
+		_colors.white("|") +
+		" Active files: " +
+		`${payloadBar.filename}` : "";
 	var barStr =
 		_colors.white("|") +
 		_colors.cyan(bar + " " + autopadding(percentage, 3) + "%") +
@@ -42,10 +46,7 @@ function formatBar(optionsBar, paramsBar, payloadBar) {
 		" " +
 		autopadding(paramsBar.value, `${paramsBar.total}`.length) +
 		`/${paramsBar.total}` +
-		" " +
-		_colors.white("|") +
-		" Active files: " +
-		`${payloadBar.filename}`;
+		payload;
 	return barStr;
 }
 
