@@ -28,7 +28,7 @@ module.exports = {
 		const segmentsUrls = segmentsInfo["segments"].map(segment =>
 			(new URL(segment["uri"], segmentsUrl)).href
 		);
-
+		cfg.video = path.join(cfg.video, cfg.title);
 		const name = await downloadFile(cfg, segmentsUrls);
 		return [name, quality];
 	},

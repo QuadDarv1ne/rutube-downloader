@@ -1,4 +1,5 @@
 const fetch = require("node-fetch");
+const path = require("node:path");
 const { getManifest } = require("../m3u8Utils");
 const { selectVideoQuality } = require("../dialogue");
 const URL = require("node:url");
@@ -47,7 +48,7 @@ module.exports = {
 		const segmentsUrls = segmentsInfo.segments.map(
 			segment => urlPrefix + segment["uri"]
 		);
-
+		cfg.video = path.join(cfg.video, cfg.title);
 		const name = await downloadFile(cfg, segmentsUrls);
 		return [name, quality];
 	},
