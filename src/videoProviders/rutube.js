@@ -17,13 +17,26 @@ module.exports = {
 		const resp = await fetch(
 			`https://rutube.ru/api/play/options/${m[1]}/?no_404=true&referer=https%3A%2F%2Frutube.ru`
 		);
+		/**
+		 * Если неверный статус
+		 */
 		if (!resp.ok) {
 			throw new Error(
-				`Не удалось загрузить информацию о видео: ${cfg.url} \r\n ${resp.status} ${resp.statusText}`
+				`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${resp.status} ${resp.statusText}`
 			);
 		}
 
 		const json = await resp.json();
+
+		/**
+		 * Если получили ошибку о видео
+		 */
+		if(typeof json.detail == 'object'){
+			throw new Error(
+				`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${json.detail.languages[0].title}`
+			);
+		}
+
 		cfg.title = sanitize(emojiStrip(cfg.title ?? json.title)).replace(/\s+/g, " ");
 		const videoInfo = await getManifest(
 			json["video_balancer"]["m3u8"],

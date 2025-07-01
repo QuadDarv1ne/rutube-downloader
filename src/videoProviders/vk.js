@@ -145,6 +145,12 @@ module.exports = {
 
 		const options = { headers };
 
+		if(typeof json.payload[1][4].player != 'object') {
+			throw new Error(
+				`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${ json.payload[1][0] }`
+			);
+		}
+
 		const hlsUrl = json.payload[1][4].player.params[0].hls;
 		const hls = await getManifest(hlsUrl, "get vkVideo info", options);
 
