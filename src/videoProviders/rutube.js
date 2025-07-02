@@ -7,15 +7,17 @@ const emojiStrip = require('emoji-strip');
 const sanitize = require("sanitize-filename");
 const { downloadFile } = require("../downloadFile");
 
-const regex_rutube = /^https?:\/\/rutube\.ru\/video\/(\w+)/;
-
+const regex_rutube = /^https?:\/\/rutube\.ru\/video\/(private\/)?(\w+)/;
+// https://rutube.ru/video/private/3a16563c8168f75359cd099f76ff548e/?p=jXdLqNoqk4MzoCLAGH3-sw
 module.exports = {
 	mayUse: url => regex_rutube.test(url),
 
 	loadVideo: async cfg => {
 		const m = regex_rutube.exec(cfg.url);
+		const urlParse = URL.parse(cfg.url);
+		const p = urlParse.query ? "&" + urlParse.query : "";
 		const resp = await fetch(
-			`https://rutube.ru/api/play/options/${m[1]}/?no_404=true&referer=https%3A%2F%2Frutube.ru`
+			`https://rutube.ru/api/play/options/${m[2]}/?no_404=true&referer=https%3A%2F%2Frutube.ru${p}`
 		);
 		/**
 		 * Если неверный статус
