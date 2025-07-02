@@ -25,7 +25,7 @@ module.exports = {
 		const qualitiesOptions = playlists.map(({ attributes }, index) => {
 			const { width, height } = attributes.RESOLUTION;
 			widthList.push(width);
-			return `${index} : ${width}x${height} ${attributes.CODECS}`;
+			return `${index} : ${width}x${height} ${attributes.CODECS ?? ""}`;
 		});
 
 		if (!cfg.manualVideoQuality)

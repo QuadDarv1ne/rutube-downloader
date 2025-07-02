@@ -1,5 +1,6 @@
 const videoProviders = [
 	require("./aserPro"),
+	require("./ok"),
 	require("./rutube"),
 	require("./vk"),
 ];
