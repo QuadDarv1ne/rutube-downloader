@@ -29,13 +29,12 @@ module.exports = {
 		}
 		let text = await resp.text();
 
-		/**
-		 * На будующее
-		 * Если есть ошибка
-		 * Обработать
-		 */
-
 		const _m = regex.exec(text);
+		if(!_m){
+			throw new Error(
+				`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${resp.status} ${resp.statusText}`
+			);
+		}
 		const json = JSON.parse(_m[1].replace(/&quot;/g,'"'));
 		const metadata = JSON.parse(json.flashvars.metadata);
 		const url = metadata.hlsManifestUrl;
