@@ -6,6 +6,7 @@ const URL = require("node:url");
 const emojiStrip = require('emoji-strip');
 const sanitize = require("sanitize-filename");
 const { downloadFile } = require("../downloadFile");
+const { uuid9 } = require("../uid");
 
 const regex_rutube = /^https?:\/\/rutube\.ru\/video\/(private\/)?(\w+)/;
 // https://rutube.ru/video/private/3a16563c8168f75359cd099f76ff548e/?p=jXdLqNoqk4MzoCLAGH3-sw
@@ -39,10 +40,10 @@ module.exports = {
 			);
 		}
 
-		cfg.title = sanitize(emojiStrip(cfg.title ?? json.title)).replace(/\s+/g, " ");
+		cfg.title = sanitize(emojiStrip(cfg.title ?? (json.title ?? uuid9()))).replace(/\s+/g, " ");
 		const videoInfo = await getManifest(
 			json["video_balancer"]["m3u8"],
-			"get video info:"
+			"Не удалось получить видео:"
 		);
 
 		process.title = "DOWNLOAD: " + cfg.title;
@@ -59,7 +60,10 @@ module.exports = {
 			myURL.protocol + "//" + myURL.host + "/" + pathname.join("/") + "/";
 
 		// Получаем плейлист с сегментами
-		const segmentsInfo = await getManifest(m3u8, "get segments info:");
+		const segmentsInfo = await getManifest(
+			m3u8,
+			"Не удалось получить сегменты:"
+		);
 		const segmentsUrls = segmentsInfo.segments.map(
 			segment => urlPrefix + segment["uri"]
 		);

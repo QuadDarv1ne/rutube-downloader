@@ -12,7 +12,10 @@ module.exports = {
 	mayUse: url => regexAserPro.test(url),
 
 	loadVideo: async function (cfg) {
-		const videoInfo = await getManifest(cfg.url, "Не удалось получить видео:");
+		const videoInfo = await getManifest(
+			cfg.url,
+			"Не удалось получить видео:"
+		);
 		cfg.title = sanitize(emojiStrip(cfg.title ?? uuid9())).replace(/\s+/g, " ");
 		const [playlist, quality] = await selectVideoQuality(
 			cfg,

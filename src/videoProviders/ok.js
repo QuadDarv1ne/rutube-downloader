@@ -6,6 +6,7 @@ const URL = require("node:url");
 const emojiStrip = require('emoji-strip');
 const sanitize = require("sanitize-filename");
 const { downloadFile } = require("../downloadFile");
+const { uuid9 } = require("../uid");
 
 const regex_ok = /^https:\/\/ok.ru\/(?:video|videoembed)\/(\d+)/;
 
@@ -41,10 +42,10 @@ module.exports = {
 
 		let hlsUrl = URL.parse(url);
 
-		cfg.title = sanitize(emojiStrip(cfg.title ?? metadata.movie.title)).replace(/\s+/g, " ");
+		cfg.title = sanitize(emojiStrip(cfg.title ?? (metadata.movie.title ?? uuid9()))).replace(/\s+/g, " ");
 		const videoInfo = await getManifest(
 			url,
-			"get video info:"
+			"Не удалось получить видео:"
 		);
 
 		process.title = "DOWNLOAD: " + cfg.title;
@@ -56,7 +57,10 @@ module.exports = {
 		const urlPrefix = hlsUrl.protocol + "//" + hlsUrl.host;
 		const segmentsUrl = urlPrefix + m3u8;
 		// Получаем плейлист с сегментами
-		const segmentsInfo = await getManifest(segmentsUrl, "get segments info:");
+		const segmentsInfo = await getManifest(
+			segmentsUrl,
+			"Не удалось получить сегменты:"
+		);
 		const segmentsUrls = segmentsInfo.segments.map(
 			segment => segmentsUrl + segment["uri"]
 		);

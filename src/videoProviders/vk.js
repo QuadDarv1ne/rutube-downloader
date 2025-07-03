@@ -152,7 +152,11 @@ module.exports = {
 		}
 
 		const hlsUrl = json.payload[1][4].player.params[0].hls;
-		const hls = await getManifest(hlsUrl, "get vkVideo info", options);
+		const hls = await getManifest(
+			hlsUrl,
+			"Не удалось получить видео:",
+			options
+		);
 
 		const [playlist, quality] = await selectVideoQuality(
 			cfg,
@@ -164,7 +168,7 @@ module.exports = {
 
 		const segmentsInfo = await getManifest(
 			segmentsBase,
-			"get vkVideo segments",
+			"Не удалось получить сегменты:",
 			options
 		);
 
