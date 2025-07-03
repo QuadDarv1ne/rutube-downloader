@@ -28,13 +28,15 @@ module.exports = {
 			return `${index} : ${width}x${height} ${attributes.CODECS ?? ""}`;
 		});
 
-		if (!cfg.manualVideoQuality)
-			return [playlists[findMaxIndex(widthList)]["uri"], {}];
+		if (!cfg.manualVideoQuality) {
+			let ind = findMaxIndex(widthList);
+			return [playlists[ind]["uri"], {}, playlists[ind].attributes.CODECS];
+		}
 
 		if (cfg.quality) {
 			const selectedIndex = qualitiesOptions.indexOf(cfg.quality.label);
 			if (selectedIndex === cfg.quality.index)
-				return [playlists[selectedIndex]["uri"], cfg.quality];
+				return [playlists[selectedIndex]["uri"], cfg.quality, playlists[selectedIndex].attributes.CODECS];
 		}
 
 		console.log("Выберите качество для видео: " + cfg.title);
@@ -47,6 +49,7 @@ module.exports = {
 				resolve([
 					playlists[index]["uri"],
 					{ index, label: qualitiesOptions[index] },
+					playlists[index].attributes.CODECS
 				]);
 			})
 		);

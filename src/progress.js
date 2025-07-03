@@ -30,10 +30,18 @@ function formatBar(optionsBar, paramsBar, payloadBar) {
 	const percentage = Math.floor(paramsBar.progress * 100) + "";
 	const stopTime = parseInt(Date.now());
 	const elapsedTime = formatTime(Math.round(stopTime - paramsBar.startTime));
+
+	var provider = payloadBar.provider == 'vimeo' ? "" : " " +
+		_colors.white("|") +
+		" " +
+		autopadding(paramsBar.value, `${paramsBar.total}`.length) +
+		`/${paramsBar.total}`;
+
 	var payload = payloadBar.filename ? " " +
 		_colors.white("|") +
 		" Active files: " +
 		`${payloadBar.filename}` : "";
+
 	var barStr =
 		_colors.white("|") +
 		_colors.cyan(bar + " " + autopadding(percentage, 3) + "%") +
@@ -41,11 +49,7 @@ function formatBar(optionsBar, paramsBar, payloadBar) {
 		_colors.white("|") +
 		" " +
 		elapsedTime +
-		" " +
-		_colors.white("|") +
-		" " +
-		autopadding(paramsBar.value, `${paramsBar.total}`.length) +
-		`/${paramsBar.total}` +
+		provider +
 		payload;
 	return barStr;
 }
