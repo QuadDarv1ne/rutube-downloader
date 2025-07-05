@@ -59,7 +59,21 @@ module.exports = {
 		/**
 		 * Приведём к стандартному плейлисту
 		 */
-		const playlist = vimeoPlaylist(json.files.progressive);
+		let playlist;
+		if (json.files.progressive) {
+			playlist = vimeoPlaylist(json.files.progressive);
+		}else{
+			if(json.files.hls){
+				/**
+				 * В данном направлении ts
+				 */
+				//
+			}
+			throw new Error(
+				`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${resp.status} ${resp.statusText}`
+			);
+		}
+
 		const [url, quality, ext] = await selectVideoQuality(
 			cfg,
 			playlist
