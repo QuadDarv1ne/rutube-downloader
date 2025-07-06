@@ -35,9 +35,9 @@ async function run() {
 		};
 		let name, quality;
 		console.log(`\u00A0`);
-		process.title = `LOAD VIDEO INFO: ${file.url}`;
-		console.log(`LOAD VIDEO INFO:`.padStart(configure.padText, " "), _colors.yellowBright(file.url));
 		try {
+			process.title = `LOAD VIDEO INFO: ${file.url}`;
+			console.log(`LOAD VIDEO INFO:`.padStart(configure.padText, " "), _colors.yellowBright(file.url));
 			[name, quality] = await file.videoProvider.loadVideo(cfg);
 			file.name = name;
 			state.quality = quality;
