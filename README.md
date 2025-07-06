@@ -67,4 +67,4 @@ node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ -t "Тр
 
 ![Скачивание видео с RuTube.ru, VkVideo.ru, OK.ru, Aser.pro на NodeJS](screen-0004.png?raw=true)
 
-[str](/stargazers)
+[str](/../../stargazers)
