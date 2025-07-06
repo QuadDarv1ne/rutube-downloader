@@ -10,9 +10,11 @@
  */
 
 const _colors = require("ansi-colors");
+const { configure } = require("./src/configure");
 const { rl } = require("./src/dialogue");
 const { parseArgs } = require("./src/parseArgs");
-
+const downFiles = [];
+const errorFiles = [];
 /**
  * Получаем title процесса
  */
@@ -31,11 +33,21 @@ async function run() {
 			manualVideoQuality: state.manualVideoQuality,
 			quality: state.quality,
 		};
-
-		const [name, quality] = await file.videoProvider.loadVideo(cfg);
-
-		file.name = name;
-		state.quality = quality;
+		let name, quality;
+		console.log(`\u00A0`);
+		process.title = `LOAD VIDEO INFO: ${file.url}`;
+		console.log(`LOAD VIDEO INFO:`.padStart(configure.padText, " "), _colors.yellowBright(file.url));
+		try {
+			[name, quality] = await file.videoProvider.loadVideo(cfg);
+			file.name = name;
+			state.quality = quality;
+			downFiles.push(name);
+		} catch (e) {
+			process.title = `Error: ${file.url}`;
+			console.log("\u00A0");
+			console.log(_colors.redBright(e.message));
+			errorFiles.push(file.url);
+		}
 		state.currentFileIndex++;
 	}
 	return state;
@@ -49,10 +61,12 @@ console.clear();
  * Перехват ошибок
  */
 process.on('uncaughtException', (err) => {
+	console.log("\u00A0");
 	console.log(err);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
+	console.log("\u00A0");
 	console.log(_colors.redBright(reason.message));
 });
 /**
@@ -61,10 +75,17 @@ process.on('unhandledRejection', (reason, promise) => {
 run()
 	.then(state => {
 		console.log("\u00A0");
-		console.log(`Загружено файлов:`, _colors.yellowBright(`${state.currentFileIndex}`));
-		for (let file of state.files) console.log(_colors.cyan("+ ".padStart(17, " ")), _colors.yellowBright(file.name));
+		if(downFiles.length){
+			console.log(`Загружено файлов:`.padStart(configure.padEndText, " "), _colors.yellowBright(`${downFiles.length}`));
+			for (let file of downFiles) console.log(_colors.cyan("+ ".padStart(configure.padEndText, " ")), _colors.yellowBright(file));
+		}
+		if(errorFiles.length){
+			console.log(`Незагруженные файлы:`.padStart(configure.padEndText, " "), _colors.redBright(`${errorFiles.length}`));
+			for (let file of errorFiles) console.log(_colors.cyan("+ ".padStart(configure.padEndText, " ")), _colors.redBright(file));
+		}
 	})
 	.finally(() => {
+		rl.close();
 		process.title = globalTitle;
 		/**
 		 * Код ниже удалять запрещено!
@@ -74,5 +95,4 @@ run()
 		console.log("\u00A0\u00A0\u00A0" + _colors.bgBlue(  _colors.white("\u0020\u0023\u0421\u0432\u043e\u0438\u0445\u041d\u0435\u0411\u0440\u043e\u0441\u0430\u0435\u043c\u0020")) + "\u00A0");
 		console.log("\u00A0\u00A0\u00A0" + _colors.bgRed(   _colors.red(  "\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588")) + "\u00A0");
 		console.log("\u00A0");
-		rl.close();
 	});

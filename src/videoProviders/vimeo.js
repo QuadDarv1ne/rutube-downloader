@@ -1,12 +1,14 @@
 const fetch = require("node-fetch");
 const path = require("node:path");
-const { selectVideoQuality } = require("../dialogue");
 const URL = require("node:url");
 const _colors = require("ansi-colors");
 const { extension } = require('mime-types');
 const emojiStrip = require('emoji-strip');
 const sanitize = require("sanitize-filename");
 const { Downloader } = require("nodejs-file-downloader");
+
+const { configure } = require("../configure");
+const { selectVideoQuality } = require("../dialogue");
 const { uuid9 } = require("../uid");
 const { vimeoPlaylist } = require("../vimeoPlaylist");
 const { createDir, deleteFiles, deleteFile } = require("../fsUtils");
@@ -35,7 +37,9 @@ module.exports = {
 		const regex = /<script>window\.playerConfig = ({.+})<\/script>/gm;
 		let text = await resp.text();
 		let playerConfig = regex.exec(text);
-
+		/**
+		 * Отсутствует конфиг плеера
+		 */
 		if(!playerConfig) {
 			throw new Error(
 				`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${resp.status} ${resp.statusText}`
@@ -51,7 +55,7 @@ module.exports = {
 
 		if (!resp.ok) {
 			throw new Error(
-				`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${resp.status} ${resp.statusText}`
+				`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${resp.status} ${resp.statusText}\r\n\r\n${cfg.title}`
 			);
 		}
 
@@ -68,9 +72,10 @@ module.exports = {
 				 * В данном направлении ts
 				 */
 				//
+				//console.log(json.files.hls);
 			}
 			throw new Error(
-				`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${resp.status} ${resp.statusText}`
+				`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${resp.status} ${resp.statusText}\r\n\r\n${cfg.title}`
 			);
 		}
 
@@ -87,7 +92,7 @@ module.exports = {
 
 		console.log("\u00A0");
 		console.log(
-			"DOWNLOAD:".padStart(16, " "),
+			"DOWNLOAD:".padStart(configure.padText, " "),
 			_colors.yellowBright(cfg.title), "\n"
 		);
 
@@ -119,13 +124,13 @@ module.exports = {
 
 		console.log("\u00A0");
 		console.log(
-			"SAVE:".padStart(16, " "),
+			"SAVE:".padStart(configure.padText, " "),
 			_colors.yellowBright(fileName)
 		);
 
 		console.log("\u00A0");
 		console.log(_colors.yellowBright("DONE!"));
-		console.log("_".padEnd(20, "_"));
+		console.log("".padEnd(20, "_"));
 		/**
 		 * End
 		 */

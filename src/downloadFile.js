@@ -7,6 +7,7 @@ const fetch = require("node-fetch");
 const _colors = require("ansi-colors");
 const splitFile = require("split-file");
 
+const { configure } = require("./configure");
 const { createDir, deleteFiles, deleteFile } = require("./fsUtils");
 const { parallelFor } = require("./parallelFor");
 const { getProgress } = require("./progress");
@@ -42,9 +43,11 @@ exports.downloadFile = async function (cfg, segments, options) {
 	await createDir(cfg.video);
 	await deleteFiles(/^segment-.*\.ts/, cfg.video);
 
+	process.title = "DOWNLOAD: " + cfg.title;
+	
 	console.log("\u00A0");
 	console.log(
-		"DOWNLOAD:".padStart(16, " "),
+		"DOWNLOAD:".padStart(configure.padText, " "),
 		_colors.yellowBright(cfg.title), "\n"
 	);
 
@@ -110,7 +113,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 		_colors.yellowBright(`${saveTitle}${ext}`)
 	);
 	console.log(
-		"PLEASE WAIT...".padStart(16, " "),
+		"PLEASE WAIT...".padStart(configure.padText, " "),
 		"\n"
 	);
 	await splitFile.mergeFiles(
@@ -118,7 +121,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 		path.join(cfg.video, `${saveTitle}${ext}`)
 	);
 	console.log(
-		"DELETE FILES:".padStart(16, " "),
+		"DELETE FILES:".padStart(configure.padText, " "),
 		_colors.yellowBright(`${arrFiles.length}`),
 		"\n"
 	);
@@ -128,14 +131,14 @@ exports.downloadFile = async function (cfg, segments, options) {
 	const videoFilePath = path.join(cfg.video, videoFileName);
 	await deleteFile(videoFilePath);
 	console.log(
-		"CONVERTING:".padStart(16, " "),
+		"CONVERTING:".padStart(configure.padText, " "),
 		_colors.yellowBright(`${saveTitle}${ext}`)
 	);
 	console.log(
-		"TO:".padStart(16, " "),
+		"TO:".padStart(configure.padText, " "),
 		_colors.yellowBright(videoFileName)
 	);
-	console.log("PLEASE WAIT...".padStart(16, " "));
+	console.log("PLEASE WAIT...".padStart(configure.padText, " "));
 	console.log("\u00A0");
 	const segmentsVideoFilePath = path.join(cfg.video, `${saveTitle}${ext}`);
 	try {
@@ -145,6 +148,6 @@ exports.downloadFile = async function (cfg, segments, options) {
 		console.log(e);
 	}
 	console.log(_colors.yellowBright("DONE!"));
-	console.log("_".padEnd(20, "_"));
+	console.log("".padEnd(configure.padLine, "_"));
 	return videoFileName;
 };

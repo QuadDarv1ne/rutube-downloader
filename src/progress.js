@@ -55,11 +55,8 @@ function formatBar(optionsBar, paramsBar, payloadBar) {
 }
 
 function formatTime(value) {
-	function autopadding(v) {
-		return ("0" + v).slice(-2);
-	}
-	let s = autopadding(Math.floor((value / 1000) % 60));
-	let m = autopadding(Math.floor((value / 1000 / 60) % 60));
-	let h = autopadding(Math.floor((value / (1000 * 60 * 60)) % 24));
+	let s = String(Math.floor((value / 1000) % 60)).padStart(2, "0");
+	let m = String(Math.floor((value / 1000 / 60) % 60)).padStart(2, "0");
+	let h = String(Math.floor((value / (1000 * 60 * 60)) % 24)).padStart(2, "0");
 	return h + ":" + m + ":" + s;
 }

@@ -65,6 +65,10 @@ module.exports = {
 	mayUse: url => regexVk.test(url),
 
 	loadVideo: async cfg => {
+		/**
+		 * Обработать возможные ошибки в данной функции
+		 * Здесь нет обработчиков.
+		 */
 		const getUrlResp = await fetch(cfg.url, {
 			redirect: "manual",
 			headers: browserHeaders,

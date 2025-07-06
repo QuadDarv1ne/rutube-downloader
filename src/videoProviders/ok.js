@@ -28,7 +28,7 @@ module.exports = {
 				`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${resp.status} ${resp.statusText}`
 			);
 		}
-		let text = await resp.text();
+		let text = await resp.textConverted();
 
 		const _m = regex.exec(text);
 		if(!_m){

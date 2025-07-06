@@ -1,4 +1,5 @@
 const path = require("node:path");
+const { configure } = require("./configure");
 const { selectVideoProvider } = require("./videoProviders");
 const _colors = require("ansi-colors");
 
@@ -6,7 +7,7 @@ exports.parseArgs = args => {
 	const root = path.dirname(args[1]);
 	const state = {
 		root,
-		video: path.join(root, "/video"),
+		video: path.join(root, configure.videoDir),
 		currentFileIndex: 0,
 		files: [],
 		parallelSegments: 5,
@@ -24,10 +25,12 @@ exports.parseArgs = args => {
 			tryMatchOption(state, argument, args[i + 1]);
 			i++;
 		} else {
-			state.files.push({
-				url: argument,
-				videoProvider: selectVideoProvider(argument),
-			});
+			try {
+				state.files.push({
+					url: argument,
+					videoProvider: selectVideoProvider(argument),
+				});
+			} catch (e) { }
 		}
 	}
 

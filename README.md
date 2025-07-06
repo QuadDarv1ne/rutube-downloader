@@ -60,3 +60,9 @@ node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ -t "Тр
 ![Скачивание видео с RuTube.ru, VkVideo.ru, OK.ru, Aser.pro, Vimeo.com на NodeJS](screen-0003.png?raw=true)
 
 ![Скачивание видео с RuTube.ru, VkVideo.ru, OK.ru, Aser.pro, Vimeo.com на NodeJS](screen-0002.png?raw=true)
+
+## Как будут обработаны ошибки
+
+Если в запросе есть url видео, которого не существует или нет загрузчика для его обработки, то последующие url в запросе будут обработаны, а не пропущены, вернее не будет остановлена работа программы.
+
+![Скачивание видео с RuTube.ru, VkVideo.ru, OK.ru, Aser.pro, Vimeo.com на NodeJS](screen-0004.png?raw=true)

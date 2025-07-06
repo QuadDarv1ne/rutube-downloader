@@ -46,7 +46,6 @@ module.exports = {
 			"Не удалось получить видео:"
 		);
 
-		process.title = "DOWNLOAD: " + cfg.title;
 		const [m3u8, quality] = await selectVideoQuality(
 			cfg,
 			videoInfo["playlists"]
@@ -56,8 +55,7 @@ module.exports = {
 		const myURL = URL.parse(m3u8);
 		const pathname = myURL.pathname.split("/");
 		pathname.pop();
-		const urlPrefix =
-			myURL.protocol + "//" + myURL.host + "/" + pathname.join("/") + "/";
+		const urlPrefix = myURL.protocol + "//" + myURL.host + "/" + pathname.join("/") + "/";
 
 		// Получаем плейлист с сегментами
 		const segmentsInfo = await getManifest(
