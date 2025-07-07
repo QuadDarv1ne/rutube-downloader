@@ -20,6 +20,23 @@ const errorFiles = [];
  */
 const globalTitle = process.title;
 
+/**
+ * Очищаем консоль
+ */
+console.clear();
+
+/**
+ * Перехват ошибок
+ */
+process.on('uncaughtException', (err) => {
+	console.log("\u00A0");
+	console.log(err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+	console.log("\u00A0");
+	console.log(_colors.redBright(reason.message));
+});
 async function run() {
 	const state = parseArgs(process.argv);
 	while (state.currentFileIndex < state.files.length) {
@@ -44,6 +61,7 @@ async function run() {
 			downFiles.push(name);
 		} catch (e) {
 			process.title = `Error: ${file.url}`;
+			console.log(e);
 			console.log("\u00A0");
 			console.log(_colors.redBright(e.message));
 			errorFiles.push(file.url);
@@ -52,23 +70,6 @@ async function run() {
 	}
 	return state;
 }
-/**
- * Очищаем консоль
- */
-console.clear();
-
-/**
- * Перехват ошибок
- */
-process.on('uncaughtException', (err) => {
-	console.log("\u00A0");
-	console.log(err);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-	console.log("\u00A0");
-	console.log(_colors.redBright(reason.message));
-});
 /**
  * Запускаем
  */

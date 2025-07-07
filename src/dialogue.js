@@ -22,8 +22,9 @@ module.exports = {
 		output: process.stdout,
 	}),
 
-	selectVideoQuality: (cfg, playlists) => {
+	selectVideoQuality: (cfg, playlists, arr) => {
 		const widthList = [];
+		let arrays = [];
 		const qualitiesOptions = playlists.map(({ attributes }, index) => {
 			const { width, height } = attributes.RESOLUTION;
 			widthList.push(width);
@@ -33,13 +34,22 @@ module.exports = {
 
 		if (!cfg.manualVideoQuality) {
 			let ind = findMaxIndex(widthList);
-			return [playlists[ind]["uri"], {}, playlists[ind].attributes.CODECS];
+			arrays = [playlists[ind]["uri"], {}, playlists[ind].attributes.CODECS];
+			if(arr){
+				arrays.push( playlists[ind].segmments );
+			}
+			return arrays;
 		}
 
 		if (cfg.quality) {
 			const selectedIndex = qualitiesOptions.indexOf(cfg.quality.label);
-			if (selectedIndex === cfg.quality.index)
-				return [playlists[selectedIndex]["uri"], cfg.quality, playlists[selectedIndex].attributes.CODECS];
+			if (selectedIndex === cfg.quality.index){
+				arrays = [playlists[selectedIndex]["uri"], cfg.quality, playlists[selectedIndex].attributes.CODECS];
+				if(arr){
+					arrays.push( playlists[ind].segmments );
+				}
+				return arrays;
+			}
 		}
 		console.log(`\u00A0`);
 		console.log(`Выберите качество для видео: `.padStart(configure.padText) + _colors.yellowBright(`${cfg.title}`));
@@ -48,15 +58,20 @@ module.exports = {
 
 		return new Promise(resolve =>
 			module.exports.rl.question("", answer => {
+				let arrays = [];
 				const index = Number.parseInt(answer);
 				console.log(`\u00A0`);
 				console.log(`Выбран вариант:`.padStart(configure.padText));
 				console.log(qualitiesOptions[index]);
-				resolve([
+				arrays = [
 					playlists[index]["uri"],
 					{ index, label: qualitiesOptions[index] },
 					playlists[index].attributes.CODECS
-				]);
+				];
+				if(arr){
+					arrays.push( playlists[index].segmments );
+				}
+				resolve(arrays);
 			})
 		);
 	},
