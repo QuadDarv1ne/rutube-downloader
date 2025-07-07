@@ -29,8 +29,8 @@ console.clear();
  * Перехват ошибок
  */
 process.on('uncaughtException', (err) => {
-	console.log("\u00A0");
-	console.log(err);
+	//console.log("\u00A0");
+	//console.log(err);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
@@ -61,7 +61,7 @@ async function run() {
 			downFiles.push(name);
 		} catch (e) {
 			process.title = `Error: ${file.url}`;
-			console.log(e);
+			//console.log(e);
 			console.log("\u00A0");
 			console.log(_colors.redBright(e.message));
 			errorFiles.push(file.url);
