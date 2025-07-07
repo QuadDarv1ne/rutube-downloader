@@ -23,7 +23,7 @@ const globalTitle = process.title;
 /**
  * Очищаем консоль
  */
-console.clear();
+process.stdout.write('\033c');
 
 /**
  * Перехват ошибок

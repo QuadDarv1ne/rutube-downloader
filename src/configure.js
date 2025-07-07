@@ -1,4 +1,5 @@
 exports.configure = {
+	barSize:        25,
 	padText:        16,
 	padLine:        20,
 	padCodecs:      10,

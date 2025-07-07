@@ -1,5 +1,6 @@
 const cliProgress = require("cli-progress");
 const _colors = require("ansi-colors");
+const { configure } = require('./configure');
 
 exports.getProgress = () =>
 	new cliProgress.SingleBar(
@@ -8,7 +9,7 @@ exports.getProgress = () =>
 			hideCursor: false,
 			autopadding: true,
 			fps: 5,
-			barsize: 37,
+			barsize: configure.barSize,
 		},
 		{
 			format: formatBar,
