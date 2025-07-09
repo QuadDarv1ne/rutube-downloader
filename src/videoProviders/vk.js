@@ -4,6 +4,7 @@ const fetch = require("node-fetch");
 const emojiStrip = require('emoji-strip');
 const sanitize = require("sanitize-filename");
 const { getManifest } = require("../m3u8Utils");
+const { configure } = require("../configure");
 const { selectVideoQuality } = require("../dialogue");
 const { downloadFile } = require("../downloadFile");
 
@@ -17,8 +18,12 @@ const { downloadFile } = require("../downloadFile");
  * https://vk.com/video-18255722_456244249
  * https://vk.ru/video-18255722_456244249
  * https://vkvideo.ru/video-18255722_456244249
+ * 
+ * Поддержка ссылки с плейлиста. Пример:
+ * https://vkvideo.ru/playlist/62764098_2/video62764098_456239055
+ * 
  */
-const regexVk = /^https?:\/\/(?:vk|vkvideo)\.(?:ru|com)\/video(-?\d+_\d+)/;
+const regexVk = /^https?:\/\/(?:vk|vkvideo)\.(?:ru|com)\/(?:playlist\/.+)?video(-?\d+_\d+)/;
 
 const extractCookies = function(setCookie, cookies = {}, domain) {
 	for (let pair of setCookie) {
@@ -45,21 +50,7 @@ const encodeCookies = (c, domain) =>
 		.map(([key, value]) => `${key}=${value}`)
 		.join("; ");
 
-const browserHeaders = {
-	accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-	"accept-encoding": "gzip, deflate, br, zstd",
-	"sec-ch-ua":
-		'"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
-	"sec-ch-ua-mobile": "?0",
-	"sec-ch-ua-platform": "Windows",
-	"sec-fetch-dest": "document",
-	"sec-fetch-mode": "navigate",
-	"sec-fetch-site": "none",
-	"sec-fetch-user": "?1",
-	"upgrade-insecure-requests": "1",
-	"user-agent":
-		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36",
-};
+const browserHeaders = configure.browserHeaders;
 
 module.exports = {
 	mayUse: url => regexVk.test(url),
