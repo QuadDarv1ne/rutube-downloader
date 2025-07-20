@@ -103,18 +103,6 @@ exports.downloadFile = async function (cfg, segments, options) {
 	progress.update(existsCount(arrFiles), { filename: " " });
 	await delay(1000);
 	progress.stop();
-	/**
-	 * Очистка (удаление) прогресс бара
-	 */
-	await delay(1000);
-	// Поднимаемся на 2 линии вверх
-	process.stdout.moveCursor(0, -2);
-	// Очищаем всё, что ниже
-	// Стабильно только так
-	process.stdout.clearLine(-1);
-	process.stdout.clearLine(1);
-	process.stdout.clearLine(0);
-	await delay(1000);
 
 	const saveTitle = cfg.title;
 	const ext = path.extname(segments[0]);
