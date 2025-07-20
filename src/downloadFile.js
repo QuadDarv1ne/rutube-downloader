@@ -119,7 +119,9 @@ exports.downloadFile = async function (cfg, segments, options) {
 	const saveTitle = cfg.title;
 	const ext = path.extname(segments[0]);
 	console.log("\u00A0");
-	console.log(
+	console.log(_colors.yellowBright("VIDEO PROCESSING"));
+	console.log(,
+		"\n",
 		"COMBINING FILES:",
 		_colors.yellowBright(`${arrFiles.length}`),
 		"FILES INTO A",
