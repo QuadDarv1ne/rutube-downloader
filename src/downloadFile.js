@@ -108,7 +108,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 	const ext = path.extname(segments[0]);
 	console.log("\u00A0");
 	console.log(_colors.yellowBright("VIDEO PROCESSING"));
-	console.log(,
+	console.log(
 		"\n",
 		"COMBINING FILES:",
 		_colors.yellowBright(`${arrFiles.length}`),
