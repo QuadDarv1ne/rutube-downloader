@@ -1,5 +1,7 @@
 # Скачивание видео с RuTube.ru, VkVideo.ru, OK.ru, Aser.pro
 
+**Форк [ProjectSoft-STUDIONIONS/rutube-downloader](https://github.com/ProjectSoft-STUDIONIONS/rutube-downloader).** Добавлено десктопное приложение (Electron): одно окно — вставьте ссылку, выберите папку, нажмите «Скачать». Оригинальный CLI сохранён.
+
 <p><a href="https://github.com/ProjectSoft-STUDIONIONS/rutube-downloader/releases/latest" target="_blank"><img src="https://img.shields.io/github/v/release/ProjectSoft-STUDIONIONS/rutube-downloader?style=for-the-badge&color=%230098FF" alt="Github Latest rutube-downloader"></a> &nbsp;<a href="https://github.com/ProjectSoft-STUDIONIONS/rutube-downloader/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/github/license/ProjectSoft-STUDIONIONS/rutube-downloader?style=for-the-badge&color=%230098FF" alt="Github LICENSE rutube-downloader"></a> &nbsp;<a href="https://github.com/ProjectSoft-STUDIONIONS/rutube-downloader/" target="_blank"><img src="https://img.shields.io/github/repo-size/ProjectSoft-STUDIONIONS/rutube-downloader?style=for-the-badge&color=%230098FF" alt="Github Repo"></a> &nbsp;<a href="https://github.com/ProjectSoft-STUDIONIONS/rutube-downloader/releases/latest/download/rutube-downloader.zip" target="_blank"><img src="https://img.shields.io/github/downloads/ProjectSoft-STUDIONIONS/rutube-downloader/total?style=for-the-badge&color=%230098FF" alt="Github Download rutube-downloader"></a></p>
 
 На данный момент поддерживаются `rutube.ru`, `vkvideo.ru`, `ok.ru`, `aser.pro`
@@ -7,6 +9,18 @@
 ![Скачивание видео с RuTube.ru, VkVideo.ru, OK.ru, Aser.pro, Vimeo.com на NodeJS](screen.png?raw=true)
 
 ![Скачивание видео с RuTube.ru, VkVideo.ru, OK.ru, Aser.pro, Vimeo.com на NodeJS](screen-0001.png?raw=true)
+
+## Приложение с окном (UI)
+
+![Окно приложения Rutube Downloader](ui.png)
+
+После установки зависимостей (`npm run test`) запустите приложение:
+
+```bash
+npm start
+```
+
+Откроется окно: вставьте ссылку на видео (RuTube, VK Video, OK.ru, Aser.pro), нажмите «Папка» и выберите папку сохранения, затем «Скачать». Для сборки установщика (.app / .exe): `npm run build` (в папке `dist/`). Требуется **FFmpeg** в PATH (на Windows в комплекте есть `bin/ffmpeg.exe`).
 
 ## Установка
 
