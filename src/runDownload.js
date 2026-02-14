@@ -18,7 +18,7 @@ async function runDownload(url, outputDir, options = {}) {
 		parallelNum: 5,
 		url,
 		manualVideoQuality: false,
-		quality: undefined,
+		quality: options.quality,
 		onProgress: options.onProgress,
 	};
 	const [name] = await provider.loadVideo(cfg);

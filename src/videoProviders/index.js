@@ -1,5 +1,6 @@
 console.log('load');
 const videoProviders = [
+	require("./youtube"),
 	require("./aserPro"),
 	require("./ok"),
 	require("./rutube"),

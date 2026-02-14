@@ -6,8 +6,8 @@ let mainWindow = null;
 
 function createWindow() {
 	mainWindow = new BrowserWindow({
-		width: 520,
-		height: 440,
+		width: 540,
+		height: 460,
 		webPreferences: {
 			preload: path.join(__dirname, "preload.js"),
 			contextIsolation: true,
@@ -30,7 +30,7 @@ ipcMain.handle("select-folder", async () => {
 	return filePaths[0];
 });
 
-ipcMain.handle("download", async (_, { url, dir }) => {
+ipcMain.handle("download", async (_, { url, dir, quality }) => {
 	if (!url || !dir) throw new Error("Укажите ссылку и папку");
 	const sendProgress = (data) => {
 		if (mainWindow && !mainWindow.isDestroyed()) {
@@ -38,7 +38,7 @@ ipcMain.handle("download", async (_, { url, dir }) => {
 		}
 	};
 	try {
-		const filePath = await runDownload(url, dir, { onProgress: sendProgress });
+		const filePath = await runDownload(url, dir, { onProgress: sendProgress, quality });
 		sendProgress({ stage: "done", filePath });
 		return { ok: true, filePath };
 	} catch (e) {
