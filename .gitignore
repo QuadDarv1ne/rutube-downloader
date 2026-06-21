@@ -1,6 +1,8 @@
 *
 !/.github
 !/.github/**
+!/app
+!/app/**
 !/bin
 !/bin/**
 !/src
