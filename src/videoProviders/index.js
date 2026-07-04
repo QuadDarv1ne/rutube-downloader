@@ -1,4 +1,3 @@
-console.log('load');
 const videoProviders = [
 	require("./youtube"),
 	require("./aserPro"),

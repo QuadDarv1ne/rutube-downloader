@@ -56,123 +56,132 @@ module.exports = {
 	mayUse: url => regexVk.test(url),
 
 	loadVideo: async cfg => {
-		/**
-		 * Обработать возможные ошибки в данной функции
-		 * Здесь нет обработчиков.
-		 */
-		const getUrlResp = await fetch(cfg.url, {
-			redirect: "manual",
-			headers: browserHeaders,
-		});
-		const cookies = extractCookies(
-			getUrlResp.headers.raw()["set-cookie"],
-			{},
-			".vkvideo.ru"
-		);
+		try {
+			const getUrlResp = await fetch(cfg.url, {
+				redirect: "manual",
+				headers: browserHeaders,
+			});
 
-		const autoLoginResp = await fetch(getUrlResp.headers.get("location"), {
-			redirect: "manual",
-			headers: browserHeaders,
-		});
-		extractCookies(
-			autoLoginResp.headers.raw()["set-cookie"],
-			cookies,
-			".vk.com"
-		);
+			if (!getUrlResp.ok) {
+				throw new Error(`Не удалось загрузить страницу видео: ${cfg.url}\r\n\r\n${getUrlResp.status} ${getUrlResp.statusText}`);
+			}
 
-		const anonymousLogin = await fetch(
-			autoLoginResp.headers.get("location"),
-			{
+			const cookies = extractCookies(
+				getUrlResp.headers.raw()["set-cookie"],
+				{},
+				".vkvideo.ru"
+			);
+
+			const autoLoginResp = await fetch(getUrlResp.headers.get("location"), {
+				redirect: "manual",
+				headers: browserHeaders,
+			});
+			extractCookies(
+				autoLoginResp.headers.raw()["set-cookie"],
+				cookies,
+				".vk.com"
+			);
+
+			const anonymousLogin = await fetch(
+				autoLoginResp.headers.get("location"),
+				{
+					redirect: "manual",
+					headers: {
+						...browserHeaders,
+						Cookie: encodeCookies(cookies, ".vkvideo.ru"),
+					},
+				}
+			);
+			extractCookies(
+				anonymousLogin.headers.raw()["set-cookie"],
+				cookies,
+				".vkvideo.ru"
+			);
+
+			const getPage = await fetch(anonymousLogin.headers.get("location"), {
 				redirect: "manual",
 				headers: {
 					...browserHeaders,
 					Cookie: encodeCookies(cookies, ".vkvideo.ru"),
 				},
-			}
-		);
-		extractCookies(
-			anonymousLogin.headers.raw()["set-cookie"],
-			cookies,
-			".vkvideo.ru"
-		);
+			});
+			extractCookies(
+				getPage.headers.raw()["set-cookie"],
+				cookies,
+				".vkvideo.ru"
+			);
 
-		const getPage = await fetch(anonymousLogin.headers.get("location"), {
-			redirect: "manual",
-			headers: {
+			const m = regexVk.exec(cfg.url);
+			const body =
+				"al=1&autoplay=1&claim=&force_no_repeat=true&is_video_page=true&list=&module=direct&show_next=1&video=" +
+				m[1];
+
+			const headers = {
 				...browserHeaders,
 				Cookie: encodeCookies(cookies, ".vkvideo.ru"),
-			},
-		});
-		extractCookies(
-			getPage.headers.raw()["set-cookie"],
-			cookies,
-			".vkvideo.ru"
-		);
+				"content-type": "application/x-www-form-urlencoded",
+				origin: "https://vkvideo.ru",
+				referer: cfg.url,
+				accept: "*/*",
+			};
 
-		const m = regexVk.exec(cfg.url);
-		const body =
-			"al=1&autoplay=1&claim=&force_no_repeat=true&is_video_page=true&list=&module=direct&show_next=1&video=" +
-			m[1];
-
-		const headers = {
-			...browserHeaders,
-			Cookie: encodeCookies(cookies, ".vkvideo.ru"),
-			"content-type": "application/x-www-form-urlencoded",
-			origin: "https://vkvideo.ru",
-			referer: cfg.url,
-			accept: "*/*",
-		};
-
-		const vkVideoInfo = await fetch(
-			"https://vkvideo.ru/al_video.php?act=show",
-			{
-				method: "POST",
-				redirect: "manual",
-				headers,
-				body,
-			}
-		);
-
-		let text = await vkVideoInfo.textConverted();
-
-		const json = JSON.parse(text.replace("<!--", ""));
-		cfg.title = sanitize(emojiStrip(cfg.title ?? json.payload[1][0])).replace(/\s+/g, " ");
-
-		const options = { headers };
-
-		if(typeof json.payload[1][4].player != 'object') {
-			throw new Error(
-				`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${ json.payload[1][0] }`
+			const vkVideoInfo = await fetch(
+				"https://vkvideo.ru/al_video.php?act=show",
+				{
+					method: "POST",
+					redirect: "manual",
+					headers,
+					body,
+				}
 			);
+
+			if (!vkVideoInfo.ok) {
+				throw new Error(`Не удалось получить информацию о видео: ${vkVideoInfo.status} ${vkVideoInfo.statusText}`);
+			}
+
+			let text = await vkVideoInfo.textConverted();
+			const json = JSON.parse(text.replace("<!--", ""));
+			cfg.title = sanitize(emojiStrip(cfg.title ?? json.payload[1][0])).replace(/\s+/g, " ");
+
+			const options = { headers };
+
+			if(typeof json.payload[1][4].player != 'object') {
+				throw new Error(
+					`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${ json.payload[1][0] }`
+				);
+			}
+
+			const hlsUrl = json.payload[1][4].player.params[0].hls;
+			const hls = await getManifest(
+				hlsUrl,
+				"Не удалось получить видео:",
+				options
+			);
+
+			const [playlist, quality] = await selectVideoQuality(
+				cfg,
+				hls["playlists"]
+			);
+
+			const myURL = URL.parse(hlsUrl);
+			const segmentsBase = URL.parse(myURL.protocol + "//" + myURL.host + playlist).href;
+
+			const segmentsInfo = await getManifest(
+				segmentsBase,
+				"Не удалось получить сегменты:",
+				options
+			);
+
+			const segmentsUrls = segmentsInfo["segments"].map(segment =>
+				URL.parse(segmentsBase + segment["uri"]).href
+			);
+			cfg.video = path.join(cfg.video, cfg.title);
+			
+			const name = await downloadFile(cfg, segmentsUrls, options);
+			return [name, quality];
+		} catch (e) {
+			if (e.message) throw e;
+			throw new Error(`VK Video: ошибка при загрузке видео ${cfg.url}`);
 		}
-
-		const hlsUrl = json.payload[1][4].player.params[0].hls;
-		const hls = await getManifest(
-			hlsUrl,
-			"Не удалось получить видео:",
-			options
-		);
-
-		const [playlist, quality] = await selectVideoQuality(
-			cfg,
-			hls["playlists"]
-		);
-
-		const myURL = URL.parse(hlsUrl);
-		const segmentsBase = URL.parse(myURL.protocol + "//" + myURL.host + playlist).href;
-
-		const segmentsInfo = await getManifest(
-			segmentsBase,
-			"Не удалось получить сегменты:",
-			options
-		);
-
-		const segmentsUrls = segmentsInfo["segments"].map(segment =>
-			URL.parse(segmentsBase + segment["uri"]).href
-		);
-		cfg.video = path.join(cfg.video, cfg.title);
-		
-		const name = await downloadFile(cfg, segmentsUrls, options);
-		return [name, quality];
 	},
 };

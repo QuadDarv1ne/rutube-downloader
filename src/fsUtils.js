@@ -34,7 +34,7 @@ module.exports = {
 				} else if (err.code === "ENOENT") {
 					resolve(true);
 				} else {
-					reject(false);
+					reject(err);
 				}
 			});
 		}),

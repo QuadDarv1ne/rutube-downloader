@@ -1,32 +1,32 @@
 const { exec } = require("node:child_process");
 
-let path;
+let ffmpegPath;
 
-
-const probePath = path =>
+const probePath = p =>
 	new Promise(resolve => {
-		exec(`${path} -version`, err => {
+		exec(`"${p}" -version`, err => {
 			resolve(!err);
 		});
 	});
 
 exports.execFFmpeg = async (input, output) => {
-	if (!path) {
-		path = "ffmpeg";
-		if (!(await probePath(path))) {
-			path = "../bin/ffmpeg";
+	if (!ffmpegPath) {
+		ffmpegPath = "ffmpeg";
+		if (!(await probePath(ffmpegPath))) {
+			ffmpegPath = "../bin/ffmpeg";
 
-			if (!(await probePath(path))) throw new Error("ffmpeg не найден");
+			if (!(await probePath(ffmpegPath))) throw new Error("ffmpeg не найден");
 		}
 	}
 
 	return new Promise((resolve, reject) => {
 		const child = exec(
-			`${path} -hide_banner -y -i "${input}" -vcodec copy -acodec copy "${output}"`
+			`"${ffmpegPath}" -hide_banner -y -i "${input}" -vcodec copy -acodec copy "${output}"`
 		);
-		child.stdout.pipe(process.stdout);
+		let stderr = "";
+		child.stderr.on("data", chunk => { stderr += chunk; });
 		child.on("exit", code => {
-			if (code) reject("ffmpeg error");
+			if (code) reject(new Error("ffmpeg error (code " + code + "): " + stderr.trim()));
 			else resolve(true);
 		});
 	});

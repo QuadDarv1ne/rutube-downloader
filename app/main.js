@@ -6,8 +6,11 @@ let mainWindow = null;
 
 function createWindow() {
 	mainWindow = new BrowserWindow({
-		width: 540,
-		height: 460,
+		width: 560,
+		height: 500,
+		minWidth: 480,
+		minHeight: 400,
+		title: "Rutube Downloader",
 		webPreferences: {
 			preload: path.join(__dirname, "preload.js"),
 			contextIsolation: true,

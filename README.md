@@ -1,5 +1,11 @@
 # Rutube Downloader
 
+**Автор:** Дуплей Максим Игоревич  
+**Дата:** 04.07.2026  
+**Школа программирования:** Maestro7IT
+
+---
+
 Форк [ProjectSoft-STUDIONIONS/rutube-downloader](https://github.com/ProjectSoft-STUDIONIONS/rutube-downloader). Десктопное приложение и CLI для скачивания видео с **YouTube**, RuTube, VK Video, OK.ru, Aser.pro.
 
 ![Вкладка RuTube, VK, OK, Aser](ui_ru.png)
@@ -7,6 +13,25 @@
 ![Вкладка YouTube](ui_youtube.png)
 
 ---
+
+## Возможности
+
+- Скачивание видео с **YouTube**, **RuTube**, **VK Video**, **OK.ru**, **Aser.pro**
+- Выбор качества видео (для YouTube: best, 1080p, 720p, 480p, 360p, только аудио)
+- Параллельная загрузка сегментов (по умолчанию 5 потоков)
+- Автоматическая конвертация TS в MP4 через FFmpeg
+- Тёмный интерфейс с вкладками для разных площадок
+- Прогресс загрузки в реальном времени
+
+## Поддерживаемые сайты
+
+| Сайт | Пример URL |
+|------|-----------|
+| YouTube | `youtube.com/watch?v=...`, `youtu.be/...` |
+| RuTube | `rutube.ru/video/...` |
+| VK Video | `vkvideo.ru/video...`, `vk.com/video...` |
+| OK.ru | `ok.ru/video/...` |
+| Aser.pro | `aser.pro/content/.../hls/index.m3u8` |
 
 ## Запуск приложения (окно)
 
@@ -27,8 +52,52 @@ npm start
 node index.js <ссылка на видео>
 ```
 
-Поддерживаются несколько ссылок подряд. Скрипт предложит выбрать качество; по умолчанию загрузка в 5 потоков (опция `-p <число>`).
+### Опции CLI
 
-## Поддерживаемые сайты
+| Опция | Описание |
+|-------|---------|
+| `-t <заголовок>` | Указать имя файла вручную |
+| `-p <число>` | Количество параллельных загрузок (по умолчанию 5) |
+| `-q` | Интерактивный выбор качества |
+| `-h` | Показать справку |
 
-`youtube.com`, `youtu.be`, `rutube.ru`, `vkvideo.ru`, `ok.ru`, `aser.pro`
+Пример:
+
+```bash
+node index.js -p 8 "https://rutube.ru/video/abc123/"
+```
+
+Поддерживаются несколько ссылок подряд.
+
+## Технологии
+
+- **Electron 28** — десктопное приложение
+- **Node.js** — рантайм для CLI и ядра загрузки
+- **FFmpeg** — конвертация TS → MP4
+- **yt-dlp** — загрузка видео с YouTube
+- **m3u8-parser** — парсинг HLS-плейлистов
+- **node-fetch** — HTTP-запросы
+- **split-file** — объединение сегментов
+- **cli-progress** — прогресс-бар в CLI
+
+## Структура проекта
+
+```
+rutube-downloader/
+├── app/                  # Electron GUI (main.js, index.html, preload.js)
+├── bin/                  # Бинарники (ffmpeg.exe)
+├── src/
+│   ├── videoProviders/   # Плагины загрузчиков (YouTube, RuTube, VK, OK, Aser)
+│   ├── downloadFile.js   # Скачивание сегментов + объединение + конвертация
+│   ├── FFmpeg.js         # Обёртка над FFmpeg
+│   ├── m3u8Utils.js      # Парсинг HLS m3u8
+│   ├── parallelFor.js    # Параллельное выполнение
+│   └── ...
+├── index.js              # Точка входа CLI
+├── package.json
+└── README.md
+```
+
+## Лицензия
+
+MIT License

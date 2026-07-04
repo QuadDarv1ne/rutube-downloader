@@ -36,7 +36,7 @@ module.exports = {
 			let ind = findMaxIndex(widthList);
 			arrays = [playlists[ind]["uri"], {}, playlists[ind].attributes.CODECS];
 			if(arr){
-				arrays.push( playlists[ind].segmments );
+				arrays.push( playlists[ind].segments );
 			}
 			return arrays;
 		}
@@ -46,7 +46,7 @@ module.exports = {
 			if (selectedIndex === cfg.quality.index){
 				arrays = [playlists[selectedIndex]["uri"], cfg.quality, playlists[selectedIndex].attributes.CODECS];
 				if(arr){
-					arrays.push( playlists[ind].segmments );
+					arrays.push( playlists[selectedIndex].segments );
 				}
 				return arrays;
 			}
@@ -69,7 +69,7 @@ module.exports = {
 					playlists[index].attributes.CODECS
 				];
 				if(arr){
-					arrays.push( playlists[index].segmments );
+					arrays.push( playlists[index].segments );
 				}
 				resolve(arrays);
 			})

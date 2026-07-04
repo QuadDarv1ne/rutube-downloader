@@ -4,7 +4,7 @@ exports.configure = {
 	padLine:        20,
 	padCodecs:      10,
 	padEndText:     21,
-	videoDir:       `/video`,
+	videoDir:       "video",
 	browserHeaders:  {
 		accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
 		"accept-encoding": "gzip, deflate, br, zstd",
