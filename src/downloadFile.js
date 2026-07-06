@@ -157,7 +157,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 		await execFFmpeg(segmentsVideoFilePath, videoFilePath);
 		await deleteFile(segmentsVideoFilePath);
 	} catch (e) {
-		console.log(e);
+		console.log(_colors.redBright("FFmpeg ошибка: " + e.message));
 	}
 	await delay(500);
 	console.log(_colors.yellowBright("DONE!"));

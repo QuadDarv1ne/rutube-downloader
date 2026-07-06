@@ -1,6 +1,6 @@
 const cliProgress = require("cli-progress");
 const _colors = require("ansi-colors");
-const { configure } = require('./configure');
+const { configure } = require("./configure");
 
 exports.getProgress = () =>
 	new cliProgress.SingleBar(
@@ -32,7 +32,7 @@ function formatBar(optionsBar, paramsBar, payloadBar) {
 	const stopTime = parseInt(Date.now());
 	const elapsedTime = formatTime(Math.round(stopTime - paramsBar.startTime));
 
-	const provider = payloadBar.provider == 'vimeo' ? "" : " " +
+	const provider = payloadBar.provider === "vimeo" ? "" : " " +
 		_colors.white("|") +
 		" " +
 		autopadding(paramsBar.value, `${paramsBar.total}`.length) +

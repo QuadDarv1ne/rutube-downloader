@@ -2,11 +2,8 @@ const fetch = require("node-fetch");
 const path = require("node:path");
 const { getManifest } = require("../m3u8Utils");
 const { selectVideoQuality } = require("../dialogue");
-const URL = require("node:url");
-const emojiStrip = require("emoji-strip");
-const sanitize = require("sanitize-filename");
 const { downloadFile } = require("../downloadFile");
-const { uuid9 } = require("../uid");
+const { sanitizeTitle } = require("./titleUtils");
 
 const regex_rutube = /^https?:\/\/rutube\.ru\/video\/(private\/)?(\w+)/;
 // https://rutube.ru/video/private/3a16563c8168f75359cd099f76ff548e/?p=jXdLqNoqk4MzoCLAGH3-sw
@@ -44,7 +41,7 @@ module.exports = {
 			);
 		}
 
-		cfg.title = sanitize(emojiStrip(cfg.title ?? (json.title ?? uuid9()))).replace(/\s+/g, " ");
+		cfg.title = sanitizeTitle(cfg.title, json.title);
 		const videoInfo = await getManifest(
 			json["video_balancer"]["m3u8"],
 			"Не удалось получить видео:"

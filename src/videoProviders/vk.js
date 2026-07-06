@@ -1,12 +1,10 @@
-const URL = require("node:url");
 const path = require("node:path");
 const fetch = require("node-fetch");
-const emojiStrip = require("emoji-strip");
-const sanitize = require("sanitize-filename");
 const { getManifest } = require("../m3u8Utils");
 const { configure } = require("../configure");
 const { selectVideoQuality } = require("../dialogue");
 const { downloadFile } = require("../downloadFile");
+const { sanitizeTitle } = require("./titleUtils");
 
 /**
  * Видео от пользователя
@@ -145,11 +143,11 @@ module.exports = {
 
 			let text = await vkVideoInfo.textConverted();
 			const json = JSON.parse(text.replace("<!--", ""));
-			cfg.title = sanitize(emojiStrip(cfg.title ?? json.payload?.[1]?.[0] ?? "video")).replace(/\s+/g, " ");
+			cfg.title = sanitizeTitle(cfg.title, json.payload?.[1]?.[0]);
 
 			const options = { headers };
 
-			if(typeof json.payload?.[1]?.[4]?.player != 'object') {
+			if (typeof json.payload?.[1]?.[4]?.player !== "object") {
 				throw new Error(
 					`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${ json.payload?.[1]?.[0] ?? "неизвестно" }`
 				);

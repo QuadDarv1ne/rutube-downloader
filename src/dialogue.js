@@ -60,6 +60,16 @@ module.exports = {
 			module.exports.rl.question("", answer => {
 				let arrays = [];
 				const index = Number.parseInt(answer);
+				if (!Number.isFinite(index) || index < 0 || index >= playlists.length) {
+					console.log(_colors.redBright("Неверный выбор, выбрано качество по умолчанию"));
+					const ind = findMaxIndex(widthList);
+					arrays = [playlists[ind]["uri"], {}, playlists[ind].attributes.CODECS];
+					if (arr) {
+						arrays.push(playlists[ind].segments);
+					}
+					resolve(arrays);
+					return;
+				}
 				console.log(`\u00A0`);
 				console.log(`Выбран вариант:`.padStart(configure.padText));
 				console.log(qualitiesOptions[index]);

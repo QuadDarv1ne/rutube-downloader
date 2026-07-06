@@ -1,10 +1,8 @@
 const path = require("node:path");
-const emojiStrip = require('emoji-strip');
-const sanitize = require("sanitize-filename");
 const { downloadFile } = require("../downloadFile");
 const { selectVideoQuality } = require("../dialogue");
-const { uuid9 } = require("../uid");
 const { getManifest } = require("../m3u8Utils");
+const { sanitizeTitle } = require("./titleUtils");
 
 const regexAserPro = /^https?:\/\/aser\.pro\/content\/.+?\/hls\/index.m3u8$/;
 
@@ -16,7 +14,7 @@ module.exports = {
 			cfg.url,
 			"Не удалось получить видео:"
 		);
-		cfg.title = sanitize(emojiStrip(cfg.title ?? uuid9())).replace(/\s+/g, " ");
+		cfg.title = sanitizeTitle(cfg.title);
 		const [playlist, quality] = await selectVideoQuality(
 			cfg,
 			videoInfo["playlists"]

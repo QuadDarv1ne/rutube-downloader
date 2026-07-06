@@ -35,6 +35,15 @@ ipcMain.handle("select-folder", async () => {
 
 ipcMain.handle("download", async (_, { url, dir, quality }) => {
 	if (!url || !dir) throw new Error("Укажите ссылку и папку");
+	let parsedUrl;
+	try {
+		parsedUrl = new URL(url);
+	} catch {
+		throw new Error("Некорректная ссылка");
+	}
+	if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+		throw new Error("Поддерживаются только HTTP/HTTPS ссылки");
+	}
 	const sendProgress = (data) => {
 		if (mainWindow && !mainWindow.isDestroyed()) {
 			mainWindow.webContents.send("download-progress", data);

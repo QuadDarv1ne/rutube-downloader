@@ -1,9 +1,8 @@
 const path = require("node:path");
-const fs = require("node:fs");
+const fs = require("node:fs/promises");
 const youtubedl = require("youtube-dl-exec");
-const emojiStrip = require("emoji-strip");
-const sanitize = require("sanitize-filename");
 const { createDir } = require("../fsUtils");
+const { sanitizeTitle } = require("./titleUtils");
 
 const regex_youtube = /^https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]+/;
 
@@ -83,8 +82,7 @@ module.exports = {
 			} finally {
 				clearTimeout(slowHintTimer);
 			}
-			const rawTitle = sanitize(emojiStrip(info.title || "video")).replace(/\s+/g, " ").trim() || "video";
-			const title = cleanTitle(rawTitle);
+			const title = cleanTitle(sanitizeTitle(info.title));
 			cfg.title = title;
 			cfg.video = path.join(cfg.video, title);
 			await createDir(cfg.video);
@@ -114,10 +112,8 @@ module.exports = {
 			throw new Error("YouTube: " + (msg.length > 120 ? msg.slice(0, 120) + "…" : msg));
 		}
 
-		const files = fs.readdirSync(cfg.video).filter(f => {
-			const p = path.join(cfg.video, f);
-			return fs.statSync(p).isFile();
-		});
+		const entries = await fs.readdir(cfg.video, { withFileTypes: true });
+		const files = entries.filter(e => e.isFile()).map(e => e.name);
 		if (files.length === 0) throw new Error("Не удалось сохранить видео");
 		return [files[0], null];
 	},

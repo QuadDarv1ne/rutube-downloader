@@ -2,11 +2,8 @@ const fetch = require("node-fetch");
 const path = require("node:path");
 const { getManifest } = require("../m3u8Utils");
 const { selectVideoQuality } = require("../dialogue");
-const URL = require("node:url");
-const emojiStrip = require('emoji-strip');
-const sanitize = require("sanitize-filename");
 const { downloadFile } = require("../downloadFile");
-const { uuid9 } = require("../uid");
+const { sanitizeTitle } = require("./titleUtils");
 
 const regex_ok = /^https:\/\/ok.ru\/(?:video|videoembed)\/(\d+)/;
 
@@ -17,6 +14,9 @@ module.exports = {
 		const regex = /<div\s+data-module="OKVideo".+data-options="(.+)"\s+data-player-container-id=/;
 
 		const m = regex_ok.exec(cfg.url);
+		if (!m) {
+			throw new Error(`Не удалось распознать URL: ${cfg.url}`);
+		}
 		const resp = await fetch(
 			`https://ok.ru/videoembed/${m[1]}`
 		);
@@ -31,18 +31,21 @@ module.exports = {
 		let text = await resp.textConverted();
 
 		const _m = regex.exec(text);
-		if(!_m){
+		if (!_m) {
 			throw new Error(
 				`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${resp.status} ${resp.statusText}`
 			);
 		}
-		const json = JSON.parse(_m[1].replace(/&quot;/g,'"'));
+		const json = JSON.parse(_m[1].replace(/&quot;/g, '"'));
 		const metadata = JSON.parse(json.flashvars.metadata);
 		const url = metadata.hlsManifestUrl;
+		if (!url) {
+			throw new Error(`HLS ссылка не найдена: ${cfg.url}`);
+		}
 
-		let hlsUrl = URL.parse(url);
+		const hlsUrl = new URL(url);
 
-		cfg.title = sanitize(emojiStrip(cfg.title ?? (metadata.movie.title ?? uuid9()))).replace(/\s+/g, " ");
+		cfg.title = sanitizeTitle(cfg.title, metadata.movie.title);
 		const videoInfo = await getManifest(
 			url,
 			"Не удалось получить видео:"
@@ -67,5 +70,5 @@ module.exports = {
 		cfg.video = path.join(cfg.video, cfg.title);
 		const name = await downloadFile(cfg, segmentsUrls);
 		return [name, quality];
-	}
-}
+	},
+};
