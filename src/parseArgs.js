@@ -12,6 +12,7 @@ exports.parseArgs = args => {
 		files: [],
 		parallelSegments: 5,
 		manualVideoQuality: false,
+		quality: null,
 	};
 
 	if (args.length < 3) {
@@ -30,7 +31,9 @@ exports.parseArgs = args => {
 					url: argument,
 					videoProvider: selectVideoProvider(argument),
 				});
-			} catch (e) { }
+			} catch (e) {
+				console.log(_colors.redBright("Ошибка: " + e.message));
+			}
 		}
 	}
 

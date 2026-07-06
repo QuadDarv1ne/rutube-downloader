@@ -3,7 +3,7 @@ const path = require("node:path");
 const { getManifest } = require("../m3u8Utils");
 const { selectVideoQuality } = require("../dialogue");
 const URL = require("node:url");
-const emojiStrip = require('emoji-strip');
+const emojiStrip = require("emoji-strip");
 const sanitize = require("sanitize-filename");
 const { downloadFile } = require("../downloadFile");
 const { uuid9 } = require("../uid");
@@ -15,7 +15,10 @@ module.exports = {
 
 	loadVideo: async cfg => {
 		const m = regex_rutube.exec(cfg.url);
-		const urlParse = URL.parse(cfg.url);
+		if (!m) {
+			throw new Error(`Не удалось распознать URL: ${cfg.url}`);
+		}
+		const urlParse = new URL(cfg.url);
 		const p = urlParse.query ? "&" + urlParse.query : "";
 		const resp = await fetch(
 			`https://rutube.ru/api/play/options/${m[2]}/?no_404=true&referer=https%3A%2F%2Frutube.ru${p}`
@@ -34,9 +37,10 @@ module.exports = {
 		/**
 		 * Если получили ошибку о видео
 		 */
-		if(typeof json.detail == 'object'){
+		if(typeof json.detail === 'object'){
+			const detailMsg = json.detail?.languages?.[0]?.title ?? "неизвестная ошибка";
 			throw new Error(
-				`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${json.detail.languages[0].title}`
+				`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${detailMsg}`
 			);
 		}
 
@@ -52,7 +56,7 @@ module.exports = {
 		);
 
 		// Получаем ссылку для составления будущих ссылок на сегмент
-		const myURL = URL.parse(m3u8);
+		const myURL = new URL(m3u8);
 		const pathname = myURL.pathname.split("/");
 		pathname.pop();
 		const urlPrefix = myURL.protocol + "//" + myURL.host + "/" + pathname.join("/") + "/";

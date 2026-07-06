@@ -1,10 +1,10 @@
-const { exec } = require("node:child_process");
+const { execFile } = require("node:child_process");
 
 let ffmpegPath;
 
 const probePath = p =>
 	new Promise(resolve => {
-		exec(`"${p}" -version`, err => {
+		execFile(p, ["-version"], err => {
 			resolve(!err);
 		});
 	});
@@ -20,8 +20,9 @@ exports.execFFmpeg = async (input, output) => {
 	}
 
 	return new Promise((resolve, reject) => {
-		const child = exec(
-			`"${ffmpegPath}" -hide_banner -y -i "${input}" -vcodec copy -acodec copy "${output}"`
+		const child = execFile(
+			ffmpegPath,
+			["-hide_banner", "-y", "-i", input, "-vcodec", "copy", "-acodec", "copy", output]
 		);
 		let stderr = "";
 		child.stderr.on("data", chunk => { stderr += chunk; });

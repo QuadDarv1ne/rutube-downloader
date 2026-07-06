@@ -1,7 +1,7 @@
 const URL = require("node:url");
 const path = require("node:path");
 const fetch = require("node-fetch");
-const emojiStrip = require('emoji-strip');
+const emojiStrip = require("emoji-strip");
 const sanitize = require("sanitize-filename");
 const { getManifest } = require("../m3u8Utils");
 const { configure } = require("../configure");
@@ -28,6 +28,7 @@ const regexVk = /^https?:\/\/(?:vk|vkvideo)\.(?:ru|com)\/(?:playlist\/.+)?video(
 const extractCookies = function(setCookie, cookies = {}, domain) {
 	for (let pair of setCookie) {
 		const res = cookieReg.exec(pair);
+		if (!res) continue;
 		const domainRes = cookieDomainReg.exec(pair);
 		const cookieDomain = domainRes?.length > 0 ? domainRes[1] : domain;
 
@@ -112,6 +113,9 @@ module.exports = {
 			);
 
 			const m = regexVk.exec(cfg.url);
+			if (!m) {
+				throw new Error(`Не удалось распознать URL: ${cfg.url}`);
+			}
 			const body =
 				"al=1&autoplay=1&claim=&force_no_repeat=true&is_video_page=true&list=&module=direct&show_next=1&video=" +
 				m[1];
@@ -141,17 +145,20 @@ module.exports = {
 
 			let text = await vkVideoInfo.textConverted();
 			const json = JSON.parse(text.replace("<!--", ""));
-			cfg.title = sanitize(emojiStrip(cfg.title ?? json.payload[1][0])).replace(/\s+/g, " ");
+			cfg.title = sanitize(emojiStrip(cfg.title ?? json.payload?.[1]?.[0] ?? "video")).replace(/\s+/g, " ");
 
 			const options = { headers };
 
-			if(typeof json.payload[1][4].player != 'object') {
+			if(typeof json.payload?.[1]?.[4]?.player != 'object') {
 				throw new Error(
-					`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${ json.payload[1][0] }`
+					`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${ json.payload?.[1]?.[0] ?? "неизвестно" }`
 				);
 			}
 
-			const hlsUrl = json.payload[1][4].player.params[0].hls;
+			const hlsUrl = json.payload?.[1]?.[4]?.player?.params?.[0]?.hls;
+			if (!hlsUrl) {
+				throw new Error(`Не удалось получить HLS ссылку: ${cfg.url}`);
+			}
 			const hls = await getManifest(
 				hlsUrl,
 				"Не удалось получить видео:",
@@ -163,8 +170,8 @@ module.exports = {
 				hls["playlists"]
 			);
 
-			const myURL = URL.parse(hlsUrl);
-			const segmentsBase = URL.parse(myURL.protocol + "//" + myURL.host + playlist).href;
+			const myURL = new URL(hlsUrl);
+			const segmentsBase = new URL(myURL.protocol + "//" + myURL.host + playlist).href;
 
 			const segmentsInfo = await getManifest(
 				segmentsBase,
@@ -173,7 +180,7 @@ module.exports = {
 			);
 
 			const segmentsUrls = segmentsInfo["segments"].map(segment =>
-				URL.parse(segmentsBase + segment["uri"]).href
+				new URL(segmentsBase + segment["uri"]).href
 			);
 			cfg.video = path.join(cfg.video, cfg.title);
 			

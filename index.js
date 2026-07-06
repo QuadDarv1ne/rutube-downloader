@@ -35,7 +35,8 @@ process.on('uncaughtException', (err) => {
 
 process.on('unhandledRejection', (reason, promise) => {
 	console.log("\u00A0");
-	console.log(_colors.redBright(reason.message));
+	const msg = reason instanceof Error ? reason.message : String(reason);
+	console.log(_colors.redBright(msg));
 });
 async function run() {
 	const state = parseArgs(process.argv);

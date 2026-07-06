@@ -25,25 +25,25 @@ function formatBar(optionsBar, paramsBar, payloadBar) {
 	const completeSize = Math.round(paramsBar.progress * optionsBar.barsize);
 	const incompleteSize = optionsBar.barsize - completeSize;
 	const bar =
-		optionsBar.barCompleteString.substr(0, completeSize) +
+		optionsBar.barCompleteString.slice(0, completeSize) +
 		optionsBar.barGlue +
-		optionsBar.barIncompleteString.substr(0, incompleteSize);
+		optionsBar.barIncompleteString.slice(0, incompleteSize);
 	const percentage = Math.floor(paramsBar.progress * 100) + "";
 	const stopTime = parseInt(Date.now());
 	const elapsedTime = formatTime(Math.round(stopTime - paramsBar.startTime));
 
-	var provider = payloadBar.provider == 'vimeo' ? "" : " " +
+	const provider = payloadBar.provider == 'vimeo' ? "" : " " +
 		_colors.white("|") +
 		" " +
 		autopadding(paramsBar.value, `${paramsBar.total}`.length) +
 		`/${paramsBar.total}`;
 
-	var payload = payloadBar.filename ? " " +
+	const payload = payloadBar.filename ? " " +
 		_colors.white("|") +
 		" Active files: " +
 		`${payloadBar.filename}` : "";
 
-	var barStr =
+	const barStr =
 		_colors.white("|") +
 		_colors.cyan(bar + " " + autopadding(percentage, 3) + "%") +
 		" " +

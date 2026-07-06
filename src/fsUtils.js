@@ -3,11 +3,17 @@ const path = require("node:path");
 
 module.exports = {
 	createDir: dir =>
-		new Promise(resolve => {
+		new Promise((resolve, reject) => {
 			fs.access(dir, function (err) {
 				if (err && err.code === "ENOENT") {
-					fs.mkdirSync(dir, { recursive: true });
-					resolve(true);
+					try {
+						fs.mkdirSync(dir, { recursive: true });
+						resolve(true);
+					} catch (e) {
+						reject(e);
+					}
+				} else if (err) {
+					reject(err);
 				} else {
 					resolve(true);
 				}
@@ -15,14 +21,18 @@ module.exports = {
 		}),
 
 	deleteFiles: (reg, dir) =>
-		new Promise(resolve => {
-			dir = path.normalize(dir) + "/";
-			fs.readdirSync(dir)
-				.filter(f => reg.exec(f))
-				.forEach(f => {
-					fs.unlinkSync(dir + f);
-				});
-			resolve(true);
+		new Promise((resolve, reject) => {
+			try {
+				dir = path.normalize(dir) + "/";
+				fs.readdirSync(dir)
+					.filter(f => reg.exec(f))
+					.forEach(f => {
+						fs.unlinkSync(dir + f);
+					});
+				resolve(true);
+			} catch (e) {
+				reject(e);
+			}
 		}),
 
 	deleteFile: file =>
