@@ -4,6 +4,7 @@ const { getManifest } = require("../m3u8Utils");
 const { selectVideoQuality } = require("../dialogue");
 const { downloadFile } = require("../downloadFile");
 const { sanitizeTitle } = require("./titleUtils");
+const { fetchWithTimeout } = require("./fetchTimeout");
 
 const regex_ok = /^https:\/\/ok.ru\/(?:video|videoembed)\/(\d+)/;
 
@@ -17,8 +18,10 @@ module.exports = {
 		if (!m) {
 			throw new Error(`Не удалось распознать URL: ${cfg.url}`);
 		}
-		const resp = await fetch(
-			`https://ok.ru/videoembed/${m[1]}`
+		const resp = await fetchWithTimeout(
+			`https://ok.ru/videoembed/${m[1]}`,
+			{},
+			30000
 		);
 		/**
 		 * Если неверный статус
@@ -37,6 +40,9 @@ module.exports = {
 			);
 		}
 		const json = JSON.parse(_m[1].replace(/&quot;/g, '"'));
+		if (!json?.flashvars?.metadata) {
+			throw new Error(`Не удалось извлечь данные о видео: ${cfg.url}`);
+		}
 		const metadata = JSON.parse(json.flashvars.metadata);
 		const url = metadata.hlsManifestUrl;
 		if (!url) {

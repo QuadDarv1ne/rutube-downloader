@@ -1,4 +1,5 @@
 const { execFile } = require("node:child_process");
+const path = require("node:path");
 
 let ffmpegPath;
 
@@ -13,7 +14,7 @@ exports.execFFmpeg = async (input, output) => {
 	if (!ffmpegPath) {
 		ffmpegPath = "ffmpeg";
 		if (!(await probePath(ffmpegPath))) {
-			ffmpegPath = "../bin/ffmpeg";
+			ffmpegPath = path.join(__dirname, "..", "bin", "ffmpeg");
 
 			if (!(await probePath(ffmpegPath))) throw new Error("ffmpeg не найден");
 		}

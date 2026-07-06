@@ -1,4 +1,5 @@
 const fs = require("node:fs");
+const fsp = require("node:fs/promises");
 const path = require("node:path");
 
 module.exports = {
@@ -35,17 +36,13 @@ module.exports = {
 			}
 		}),
 
-	deleteFile: file =>
-		new Promise((resolve, reject) => {
-			fs.stat(file, function (err) {
-				if (err === null) {
-					fs.unlinkSync(file);
-					resolve(true);
-				} else if (err.code === "ENOENT") {
-					resolve(true);
-				} else {
-					reject(err);
-				}
-			});
-		}),
+	deleteFile: async file => {
+		try {
+			await fsp.unlink(file);
+			return true;
+		} catch (err) {
+			if (err.code === "ENOENT") return true;
+			throw err;
+		}
+	},
 };

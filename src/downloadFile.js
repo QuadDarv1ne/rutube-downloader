@@ -63,7 +63,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 		cfg.parallelNum,
 		segments,
 		async (segmentUrl, segmentIndex) => {
-			const ext = path.extname(segmentUrl);
+			const ext = path.extname(segmentUrl.split("?")[0]);
 			const segmentFileName =
 				"segment-" + `${segmentIndex + 1}`.padStart(10, "0") + ext;
 			const segmentFilePath = path.join(cfg.video, segmentFileName);
@@ -116,7 +116,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 	if (typeof cfg.onProgress === "function") cfg.onProgress({ stage: "merge" });
 
 	const saveTitle = cfg.title;
-	const ext = path.extname(segments[0]);
+	const ext = path.extname(segments[0].split("?")[0]);
 	const filesToMerge = arrFiles.filter(Boolean);
 	console.log("\u00A0");
 	console.log(_colors.yellowBright("VIDEO PROCESSING"));

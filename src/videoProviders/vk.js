@@ -1,10 +1,10 @@
 const path = require("node:path");
-const fetch = require("node-fetch");
 const { getManifest } = require("../m3u8Utils");
 const { configure } = require("../configure");
 const { selectVideoQuality } = require("../dialogue");
 const { downloadFile } = require("../downloadFile");
 const { sanitizeTitle } = require("./titleUtils");
+const { fetchWithTimeout } = require("./fetchTimeout");
 
 /**
  * Видео от пользователя
@@ -23,7 +23,7 @@ const { sanitizeTitle } = require("./titleUtils");
  */
 const regexVk = /^https?:\/\/(?:vk|vkvideo)\.(?:ru|com)\/(?:playlist\/.+)?video(-?\d+_\d+)/;
 
-const extractCookies = function(setCookie, cookies = {}, domain) {
+const extractCookies = function(setCookie = [], cookies = {}, domain) {
 	for (let pair of setCookie) {
 		const res = cookieReg.exec(pair);
 		if (!res) continue;
@@ -56,7 +56,7 @@ module.exports = {
 
 	loadVideo: async cfg => {
 		try {
-			const getUrlResp = await fetch(cfg.url, {
+			const getUrlResp = await fetchWithTimeout(cfg.url, {
 				redirect: "manual",
 				headers: browserHeaders,
 			});
@@ -73,7 +73,7 @@ module.exports = {
 
 			const location1 = getUrlResp.headers.get("location");
 			if (!location1) throw new Error(`Не удалось получить перенаправление: ${cfg.url}`);
-			const autoLoginResp = await fetch(location1, {
+			const autoLoginResp = await fetchWithTimeout(location1, {
 				redirect: "manual",
 				headers: browserHeaders,
 			});
@@ -85,7 +85,7 @@ module.exports = {
 
 			const location2 = autoLoginResp.headers.get("location");
 			if (!location2) throw new Error(`Не удалось получить перенаправление (шаг 2): ${cfg.url}`);
-			const anonymousLogin = await fetch(
+			const anonymousLogin = await fetchWithTimeout(
 				location2,
 				{
 					redirect: "manual",
@@ -103,7 +103,7 @@ module.exports = {
 
 			const location3 = anonymousLogin.headers.get("location");
 			if (!location3) throw new Error(`Не удалось получить перенаправление (шаг 3): ${cfg.url}`);
-			const getPage = await fetch(location3, {
+			const getPage = await fetchWithTimeout(location3, {
 				redirect: "manual",
 				headers: {
 					...browserHeaders,
@@ -133,7 +133,7 @@ module.exports = {
 				accept: "*/*",
 			};
 
-			const vkVideoInfo = await fetch(
+			const vkVideoInfo = await fetchWithTimeout(
 				"https://vkvideo.ru/al_video.php?act=show",
 				{
 					method: "POST",
