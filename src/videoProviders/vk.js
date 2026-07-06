@@ -61,7 +61,7 @@ module.exports = {
 				headers: browserHeaders,
 			});
 
-			if (!getUrlResp.ok) {
+			if (getUrlResp.status >= 400) {
 				throw new Error(`Не удалось загрузить страницу видео: ${cfg.url}\r\n\r\n${getUrlResp.status} ${getUrlResp.statusText}`);
 			}
 
@@ -71,7 +71,9 @@ module.exports = {
 				".vkvideo.ru"
 			);
 
-			const autoLoginResp = await fetch(getUrlResp.headers.get("location"), {
+			const location1 = getUrlResp.headers.get("location");
+			if (!location1) throw new Error(`Не удалось получить перенаправление: ${cfg.url}`);
+			const autoLoginResp = await fetch(location1, {
 				redirect: "manual",
 				headers: browserHeaders,
 			});
@@ -81,8 +83,10 @@ module.exports = {
 				".vk.com"
 			);
 
+			const location2 = autoLoginResp.headers.get("location");
+			if (!location2) throw new Error(`Не удалось получить перенаправление (шаг 2): ${cfg.url}`);
 			const anonymousLogin = await fetch(
-				autoLoginResp.headers.get("location"),
+				location2,
 				{
 					redirect: "manual",
 					headers: {
@@ -97,7 +101,9 @@ module.exports = {
 				".vkvideo.ru"
 			);
 
-			const getPage = await fetch(anonymousLogin.headers.get("location"), {
+			const location3 = anonymousLogin.headers.get("location");
+			if (!location3) throw new Error(`Не удалось получить перенаправление (шаг 3): ${cfg.url}`);
+			const getPage = await fetch(location3, {
 				redirect: "manual",
 				headers: {
 					...browserHeaders,

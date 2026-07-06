@@ -87,7 +87,6 @@ exports.downloadFile = async function (cfg, segments, options) {
 			if (error) {
 				progressStopped = true;
 				progress.stop();
-				await deleteFiles(/^segment-.*\.ts/, cfg.video);
 				throw error;
 			}
 
@@ -118,6 +117,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 
 	const saveTitle = cfg.title;
 	const ext = path.extname(segments[0]);
+	const filesToMerge = arrFiles.filter(Boolean);
 	console.log("\u00A0");
 	console.log(_colors.yellowBright("VIDEO PROCESSING"));
 	console.log(
@@ -131,7 +131,6 @@ exports.downloadFile = async function (cfg, segments, options) {
 		"PLEASE WAIT...".padStart(configure.padText, " "),
 		"\n"
 	);
-	const filesToMerge = arrFiles.filter(Boolean);
 	await splitFile.mergeFiles(
 		filesToMerge,
 		path.join(cfg.video, `${saveTitle}${ext}`)

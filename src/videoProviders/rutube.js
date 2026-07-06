@@ -34,16 +34,22 @@ module.exports = {
 		/**
 		 * Если получили ошибку о видео
 		 */
-		if(typeof json.detail === 'object'){
-			const detailMsg = json.detail?.languages?.[0]?.title ?? "неизвестная ошибка";
+		if (typeof json.detail === "object" || typeof json.detail === "string") {
+			const detailMsg = typeof json.detail === "string"
+				? json.detail
+				: json.detail?.languages?.[0]?.title ?? "неизвестная ошибка";
 			throw new Error(
 				`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${detailMsg}`
 			);
 		}
 
 		cfg.title = sanitizeTitle(cfg.title, json.title);
+		const m3u8Url = json.video_balancer?.m3u8;
+		if (!m3u8Url) {
+			throw new Error(`video_balancer.m3u8 не найден: ${cfg.url}`);
+		}
 		const videoInfo = await getManifest(
-			json["video_balancer"]["m3u8"],
+			m3u8Url,
 			"Не удалось получить видео:"
 		);
 

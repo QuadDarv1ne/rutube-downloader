@@ -34,7 +34,7 @@
     "encoding": "^0.1.13",
     "m3u8-parser": "7.1.0",
     "mime-types": "^3.0.1",
-    "node-fetch": "2.6.1",
+    "node-fetch": "2.6.7",
     "sanitize-filename": "1.6.3",
     "split-file": "2.3.0",
     "youtube-dl-exec": "^3.0.0"

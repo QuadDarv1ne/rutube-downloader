@@ -18,5 +18,5 @@ exports.parallelFor = async function (parallelNum, items, fn) {
 		index++;
 	}
 
-	return Promise.all(parallels.filter(Boolean));
+	return Promise.all(parallels);
 };

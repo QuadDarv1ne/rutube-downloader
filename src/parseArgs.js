@@ -23,7 +23,11 @@ exports.parseArgs = args => {
 	for (let i = 2, l = args.length; i < l; i++) {
 		const argument = args[i];
 		if (argument.startsWith("-")) {
-			tryMatchOption(state, argument, args[i + 1]);
+			try {
+				tryMatchOption(state, argument, args[i + 1]);
+			} catch (e) {
+				console.log(_colors.redBright("Ошибка: " + e.message));
+			}
 			i++;
 		} else {
 			try {

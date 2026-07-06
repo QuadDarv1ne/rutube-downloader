@@ -112,9 +112,12 @@ module.exports = {
 			throw new Error("YouTube: " + (msg.length > 120 ? msg.slice(0, 120) + "…" : msg));
 		}
 
+		const VIDEO_EXTENSIONS = new Set([".mp4", ".webm", ".mkv", ".mov", ".avi", ".flv"]);
 		const entries = await fs.readdir(cfg.video, { withFileTypes: true });
-		const files = entries.filter(e => e.isFile()).map(e => e.name);
-		if (files.length === 0) throw new Error("Не удалось сохранить видео");
-		return [files[0], null];
+		const videoFiles = entries
+			.filter(e => e.isFile() && VIDEO_EXTENSIONS.has(path.extname(e.name).toLowerCase()))
+			.map(e => e.name);
+		if (videoFiles.length === 0) throw new Error("Не удалось сохранить видео");
+		return [videoFiles[0], null];
 	},
 };

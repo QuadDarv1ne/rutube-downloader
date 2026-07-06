@@ -65,7 +65,7 @@ module.exports = {
 			"Не удалось получить сегменты:"
 		);
 		const segmentsUrls = segmentsInfo.segments.map(
-			segment => segmentsUrl + segment["uri"]
+			segment => new URL(segment["uri"], segmentsUrl).href
 		);
 		cfg.video = path.join(cfg.video, cfg.title);
 		const name = await downloadFile(cfg, segmentsUrls);
