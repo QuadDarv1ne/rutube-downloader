@@ -188,7 +188,7 @@
 			if (path) dirYoutube.value = path;
 		});
 
-		window.api.onDownloadProgress((data) => {
+		const removeProgressListener = window.api.onDownloadProgress((data) => {
 			if (data.stage === "segments" && data.total > 0) {
 				progressWrap.style.display = "block";
 				progressBar.style.width = (100 * data.current / data.total) + "%";
@@ -226,9 +226,13 @@
 				if (result.ok) {
 					setStatus("Готово!\n" + result.filePath, "success");
 				} else {
+					progressWrap.style.display = "none";
+					progressBar.style.width = "0%";
 					setStatus(result.error, "error");
 				}
 			} catch (e) {
+				progressWrap.style.display = "none";
+				progressBar.style.width = "0%";
 				setStatus(e.message || "Ошибка", "error");
 			}
 			btnDownload.disabled = false;

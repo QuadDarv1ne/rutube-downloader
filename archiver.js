@@ -3,8 +3,7 @@
  */
 const fs = require("node:fs"),
 	path = require("node:path"),
-	archiver = require("archiver"),
-	delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+	archiver = require("archiver");
 
 (async function () {
 
@@ -19,6 +18,16 @@ const fs = require("node:fs"),
 			"package.json",
 			"LICENSE"
 		];
+
+	output.on("error", err => {
+		console.error("Output error:", err.message);
+		process.exit(1);
+	});
+
+	archive.on("error", err => {
+		console.error("Archive error:", err.message);
+		process.exit(1);
+	});
 
 	archive.pipe(output);
 
@@ -36,7 +45,11 @@ const fs = require("node:fs"),
 	console.log("FINALIZED...");
 	archive.finalize();
 
-	await delay(500);
+	await new Promise((resolve, reject) => {
+		output.on("close", resolve);
+		archive.on("error", reject);
+	});
+
 	console.log("DONE!", "rutube-downloader.zip");
 	console.log(" ");
 })();

@@ -23,11 +23,11 @@ module.exports = {
 	deleteFiles: (reg, dir) =>
 		new Promise((resolve, reject) => {
 			try {
-				dir = path.normalize(dir) + "/";
-				fs.readdirSync(dir)
+				const normalizedDir = path.normalize(dir);
+				fs.readdirSync(normalizedDir)
 					.filter(f => reg.exec(f))
 					.forEach(f => {
-						fs.unlinkSync(dir + f);
+						fs.unlinkSync(path.join(normalizedDir, f));
 					});
 				resolve(true);
 			} catch (e) {
@@ -38,7 +38,7 @@ module.exports = {
 	deleteFile: file =>
 		new Promise((resolve, reject) => {
 			fs.stat(file, function (err) {
-				if (err == null) {
+				if (err === null) {
 					fs.unlinkSync(file);
 					resolve(true);
 				} else if (err.code === "ENOENT") {

@@ -29,8 +29,8 @@ process.stdout.write('\033c');
  * Перехват ошибок
  */
 process.on('uncaughtException', (err) => {
-	//console.log("\u00A0");
-	//console.log(err);
+	console.log("\u00A0");
+	console.log(_colors.redBright("Критическая ошибка: " + (err.message || err)));
 });
 
 process.on('unhandledRejection', (reason, promise) => {

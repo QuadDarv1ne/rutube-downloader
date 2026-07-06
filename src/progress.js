@@ -29,7 +29,7 @@ function formatBar(optionsBar, paramsBar, payloadBar) {
 		optionsBar.barGlue +
 		optionsBar.barIncompleteString.slice(0, incompleteSize);
 	const percentage = Math.floor(paramsBar.progress * 100) + "";
-	const stopTime = parseInt(Date.now());
+	const stopTime = Date.now();
 	const elapsedTime = formatTime(Math.round(stopTime - paramsBar.startTime));
 
 	const provider = payloadBar.provider === "vimeo" ? "" : " " +

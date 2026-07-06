@@ -5,11 +5,11 @@
   "license": "MIT",
   "main": "index.js",
   "scripts": {
-    "test": "npm i",
+    "test": "echo \"No tests\" && exit 0",
     "start": "electron app/main.js",
     "cli": "node index.js",
     "build": "electron-builder",
-    "format": "prettier --write \"src/**/*.js\" \"app/**/*.js\""
+    "format": "prettier --write \"*.js\" \"src/**/*.js\" \"app/**/*.js\""
   },
   "author": {
     "name": "ProjectSoft",
@@ -57,7 +57,7 @@
         "options": {
           "tabWidth": 4,
           "semi": true,
-          "jsxBracketSameLine": true,
+          "bracketSameLine": true,
           "arrowParens": "avoid",
           "parser": "typescript"
         }

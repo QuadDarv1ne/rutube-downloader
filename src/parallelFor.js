@@ -1,15 +1,15 @@
 const returnValue = v => () => v;
 
 exports.parallelFor = async function (parallelNum, items, fn) {
+	if (!items.length || parallelNum < 1) return;
+
 	const parallels = [];
 	const itemsLength = items.length;
 
 	let index = 0;
-	for (let i = 0; i < parallelNum; i++) {
-		if (index < itemsLength) {
-			parallels[i] = fn(items[index], index).then(returnValue(i));
-			index++;
-		}
+	for (let i = 0; i < parallelNum && index < itemsLength; i++) {
+		parallels[i] = fn(items[index], index).then(returnValue(i));
+		index++;
 	}
 
 	while (index < itemsLength) {
@@ -18,5 +18,5 @@ exports.parallelFor = async function (parallelNum, items, fn) {
 		index++;
 	}
 
-	return Promise.all(parallels);
+	return Promise.all(parallels.filter(Boolean));
 };

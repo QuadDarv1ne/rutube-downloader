@@ -55,6 +55,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 	const progress = getProgress();
 	const arrFiles = [];
 	const activeSegmentsNums = [];
+	let progressStopped = false;
 
 	progress.start(segments.length, 0, { filename: " " });
 
@@ -68,10 +69,12 @@ exports.downloadFile = async function (cfg, segments, options) {
 			const segmentFilePath = path.join(cfg.video, segmentFileName);
 
 			activeSegmentsNums.push(segmentIndex + 1);
-			progress.update(
-				existsCount(arrFiles),
-				joinNames(activeSegmentsNums)
-			);
+			if (!progressStopped) {
+				progress.update(
+					existsCount(arrFiles),
+					joinNames(activeSegmentsNums)
+				);
+			}
 			if (typeof cfg.onProgress === "function") {
 				cfg.onProgress({ stage: "segments", current: existsCount(arrFiles), total: segments.length });
 			}
@@ -82,10 +85,9 @@ exports.downloadFile = async function (cfg, segments, options) {
 				options
 			);
 			if (error) {
-				progress.update(existsCount(arrFiles), {
-					filename: "NO SAVE: " + _colors.redBright(segmentFileName),
-				});
+				progressStopped = true;
 				progress.stop();
+				await deleteFiles(/^segment-.*\.ts/, cfg.video);
 				throw error;
 			}
 
@@ -95,10 +97,12 @@ exports.downloadFile = async function (cfg, segments, options) {
 			);
 			activeSegmentsNums.splice(segmentFileNameIndex, 1);
 
-			progress.update(
-				existsCount(arrFiles),
-				joinNames(activeSegmentsNums)
-			);
+			if (!progressStopped) {
+				progress.update(
+					existsCount(arrFiles),
+					joinNames(activeSegmentsNums)
+				);
+			}
 			if (typeof cfg.onProgress === "function") {
 				cfg.onProgress({ stage: "segments", current: existsCount(arrFiles), total: segments.length });
 			}
@@ -119,7 +123,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 	console.log(
 		"\n",
 		"COMBINING FILES:",
-		_colors.yellowBright(`${arrFiles.length}`),
+		_colors.yellowBright(`${filesToMerge.length}`),
 		"FILES INTO A",
 		_colors.yellowBright(`${saveTitle}${ext}`)
 	);
@@ -127,13 +131,14 @@ exports.downloadFile = async function (cfg, segments, options) {
 		"PLEASE WAIT...".padStart(configure.padText, " "),
 		"\n"
 	);
+	const filesToMerge = arrFiles.filter(Boolean);
 	await splitFile.mergeFiles(
-		arrFiles,
+		filesToMerge,
 		path.join(cfg.video, `${saveTitle}${ext}`)
 	);
 	console.log(
 		"DELETE FILES:".padStart(configure.padText, " "),
-		_colors.yellowBright(`${arrFiles.length}`),
+		_colors.yellowBright(`${filesToMerge.length}`),
 		"\n"
 	);
 	await deleteFiles(/^segment-.*\.ts/, cfg.video);
