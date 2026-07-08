@@ -19,7 +19,9 @@ async function runDownload(url, outputDir, options = {}) {
 		url,
 		manualVideoQuality: false,
 		quality: options.quality,
+		format: options.format || "mp4",
 		onProgress: options.onProgress,
+		signal: options.signal,
 	};
 	const [name] = await provider.loadVideo(cfg);
 	// После loadVideo провайдер мог изменить cfg.video (например, на outputDir/title)

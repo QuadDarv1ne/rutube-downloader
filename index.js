@@ -11,7 +11,7 @@
 
 const _colors = require("ansi-colors");
 const { configure } = require("./src/configure");
-const { rl } = require("./src/dialogue");
+const { closeRL } = require("./src/dialogue");
 const { parseArgs } = require("./src/parseArgs");
 const downFiles = [];
 const errorFiles = [];
@@ -50,6 +50,7 @@ async function run() {
 			url: file.url,
 			manualVideoQuality: state.manualVideoQuality,
 			quality: state.quality,
+			format: state.format,
 		};
 		let name, quality;
 		console.log(`\u00A0`);
@@ -87,7 +88,7 @@ run()
 		}
 	})
 	.finally(() => {
-		rl.close();
+		closeRL();
 		process.title = globalTitle;
 		/**
 		 * Код ниже удалять запрещено!

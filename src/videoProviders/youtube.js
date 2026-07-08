@@ -99,7 +99,12 @@ module.exports = {
 				noPlaylist: true,
 				newline: true,
 			};
-			if (qualityOpts.mergeOutputFormat) downloadFlags.mergeOutputFormat = qualityOpts.mergeOutputFormat;
+			const outFormat = cfg.format || "mp4";
+			if (outFormat !== "mp4" && qualityOpts.mergeOutputFormat) {
+				downloadFlags.mergeOutputFormat = outFormat;
+			} else if (qualityOpts.mergeOutputFormat) {
+				downloadFlags.mergeOutputFormat = qualityOpts.mergeOutputFormat;
+			}
 			const subprocess = youtubedl.exec(cfg.url, downloadFlags);
 			attachProgressStream(subprocess.stderr, send);
 			if (subprocess.stdout) attachProgressStream(subprocess.stdout, send);

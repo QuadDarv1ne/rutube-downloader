@@ -5,6 +5,7 @@ exports.parallelFor = async function (parallelNum, items, fn) {
 
 	const parallels = [];
 	const itemsLength = items.length;
+	let failed = false;
 
 	let index = 0;
 	for (let i = 0; i < parallelNum && index < itemsLength; i++) {
@@ -13,14 +14,20 @@ exports.parallelFor = async function (parallelNum, items, fn) {
 	}
 
 	try {
-		while (index < itemsLength) {
+		while (index < itemsLength && !failed) {
 			const i = await Promise.race(parallels);
 			parallels[i] = fn(items[index], index).then(returnValue(i));
 			index++;
 		}
-	} finally {
-		await Promise.allSettled(parallels);
+	} catch (e) {
+		failed = true;
 	}
 
-	return Promise.all(parallels);
+	await Promise.allSettled(parallels);
+
+	if (failed) {
+		const settled = await Promise.allSettled(parallels);
+		const firstError = settled.find(r => r.status === "rejected");
+		if (firstError) throw firstError.reason;
+	}
 };

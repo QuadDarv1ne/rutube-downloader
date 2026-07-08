@@ -1,6 +1,7 @@
 const path = require("node:path");
 const { configure } = require("./configure");
 const { selectVideoProvider } = require("./videoProviders");
+const { isValidFormat } = require("./formats");
 const _colors = require("ansi-colors");
 
 exports.parseArgs = args => {
@@ -13,6 +14,7 @@ exports.parseArgs = args => {
 		parallelSegments: 5,
 		manualVideoQuality: false,
 		quality: null,
+		format: "mp4",
 	};
 
 	if (args.length < 3) {
@@ -47,11 +49,12 @@ exports.parseArgs = args => {
 const help = [
 	" ",
 	"Использовать:",
-	_colors.yellowBright("node index.js url1 [url2] [url3 -t custom_title] [url4] [...] [-p 10] [-q]"),
+	_colors.yellowBright("node index.js url1 [url2] [url3 -t custom_title] [url4] [...] [-p 10] [-q] [-f mp4]"),
 	"",
 	"Опции:",
 	" " + _colors.yellowBright("-t <title>") + " \t задать имя файла для предыдущего url",
 	" " + _colors.yellowBright("-p <int>") + " \t количество одновременных загрузок, по умолчанию 5",
+	" " + _colors.yellowBright("-f <format>") + " \t формат выходного файла: mp4, mkv, avi, mov, webm (по умолчанию mp4)",
 	" " + _colors.yellowBright("-q") + " \t\t скрипт будет спрашивать о том, какого качества видео загружать, по умолчанию выбирает наилучшее",
 	" " + _colors.yellowBright("-h") + " \t\t отобразить справку",
 	" ",
@@ -105,6 +108,13 @@ function tryMatchOption(state, option, value) {
 
 		case "-q":
 			return (state.manualVideoQuality = true);
+
+		case "-f": {
+			const fmt = value?.toLowerCase();
+			if (!fmt || !isValidFormat(fmt))
+				throw new Error("Неподдерживаемый формат: " + (value || "") + ". Доступны: mp4, mkv, avi, mov, webm");
+			return (state.format = fmt);
+		}
 
 		case "-h":
 			showHelp();

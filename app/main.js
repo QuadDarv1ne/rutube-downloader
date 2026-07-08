@@ -1,15 +1,18 @@
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("node:path");
 const { runDownload } = require("../src/runDownload");
+const { convertFile } = require("../src/convert");
+const { isValidFormat } = require("../src/formats");
 
 let mainWindow = null;
+let activeDownload = null;
 
 function createWindow() {
 	mainWindow = new BrowserWindow({
 		width: 560,
-		height: 500,
+		height: 560,
 		minWidth: 480,
-		minHeight: 400,
+		minHeight: 440,
 		title: "Rutube Downloader",
 		webPreferences: {
 			preload: path.join(__dirname, "preload.js"),
@@ -18,7 +21,13 @@ function createWindow() {
 		},
 	});
 	mainWindow.loadFile(path.join(__dirname, "index.html"));
-	mainWindow.on("closed", () => { mainWindow = null; });
+	mainWindow.on("closed", () => {
+		mainWindow = null;
+		if (activeDownload) {
+			activeDownload.abort();
+			activeDownload = null;
+		}
+	});
 }
 
 app.whenReady().then(createWindow);
@@ -33,7 +42,20 @@ ipcMain.handle("select-folder", async () => {
 	return filePaths[0];
 });
 
-ipcMain.handle("download", async (_, { url, dir, quality }) => {
+ipcMain.handle("select-file", async () => {
+	const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+		properties: ["openFile"],
+		title: "Выберите видео-файл",
+		filters: [
+			{ name: "Видео", extensions: ["ts", "mp4", "mkv", "avi", "mov", "webm", "flv", "mpg", "mpeg", "m4v", "3gp"] },
+			{ name: "Все файлы", extensions: ["*"] },
+		],
+	});
+	if (canceled || !filePaths.length) return null;
+	return filePaths[0];
+});
+
+ipcMain.handle("download", async (_, { url, dir, quality, format }) => {
 	if (!url || !dir) throw new Error("Укажите ссылку и папку");
 	let parsedUrl;
 	try {
@@ -44,13 +66,47 @@ ipcMain.handle("download", async (_, { url, dir, quality }) => {
 	if (!["http:", "https:"].includes(parsedUrl.protocol)) {
 		throw new Error("Поддерживаются только HTTP/HTTPS ссылки");
 	}
+	if (format && !isValidFormat(format)) {
+		throw new Error("Неподдерживаемый формат: " + format);
+	}
+	const sendProgress = (data) => {
+		if (mainWindow && !mainWindow.isDestroyed()) {
+			mainWindow.webContents.send("download-progress", data);
+		}
+	};
+
+	if (activeDownload) {
+		throw new Error("Загрузка уже выполняется");
+	}
+
+	const controller = new AbortController();
+	activeDownload = controller;
+	try {
+		const filePath = await runDownload(url, dir, { onProgress: sendProgress, quality, format, signal: controller.signal });
+		sendProgress({ stage: "done", filePath });
+		return { ok: true, filePath };
+	} catch (e) {
+		if (controller.signal.aborted) {
+			return { ok: false, error: "Загрузка отменена" };
+		}
+		return { ok: false, error: e.message };
+	} finally {
+		if (activeDownload === controller) activeDownload = null;
+	}
+});
+
+ipcMain.handle("convert", async (_, { src, dir, format }) => {
+	if (!src || !dir) throw new Error("Укажите исходный файл и папку");
+	if (!isValidFormat(format)) {
+		throw new Error("Неподдерживаемый формат: " + format);
+	}
 	const sendProgress = (data) => {
 		if (mainWindow && !mainWindow.isDestroyed()) {
 			mainWindow.webContents.send("download-progress", data);
 		}
 	};
 	try {
-		const filePath = await runDownload(url, dir, { onProgress: sendProgress, quality });
+		const filePath = await convertFile(src, dir, format, sendProgress);
 		sendProgress({ stage: "done", filePath });
 		return { ok: true, filePath };
 	} catch (e) {

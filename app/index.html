@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
+	<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
 	<title>Rutube Downloader — RuTube, VK, OK, Aser.pro</title>
 	<style>
 		* { box-sizing: border-box; }
@@ -30,6 +30,9 @@
 		input[type="text"]::placeholder { color: #666; }
 		.row { display: flex; gap: 8px; margin-bottom: 12px; }
 		.row input { flex: 1; margin-bottom: 0; }
+		.row-select { display: flex; gap: 8px; margin-bottom: 12px; align-items: end; }
+		.row-select > div { flex: 1; }
+		.row-select > div:last-child { flex: 0 0 auto; }
 		#qualityRow { display: none; margin-bottom: 12px; }
 		#qualityRow.visible { display: flex; align-items: center; gap: 8px; }
 		select {
@@ -107,7 +110,10 @@
 	<div class="tabs">
 		<button type="button" id="tabOther" class="active">RuTube, VK, OK, Aser</button>
 		<button type="button" id="tabYoutube">YouTube</button>
+		<button type="button" id="tabConvert">Конвертировать</button>
 	</div>
+
+	<!-- RuTube, VK, OK, Aser -->
 	<div id="panelOther" class="panel active">
 		<label>Ссылка на видео</label>
 		<input type="text" id="urlOther" placeholder="rutube.ru, vkvideo.ru, ok.ru, aser.pro" />
@@ -116,8 +122,22 @@
 			<input type="text" id="dir" placeholder="Выберите папку" readonly />
 			<button type="button" id="btnFolder">Папка</button>
 		</div>
+		<div class="row-select">
+			<div>
+				<label>Формат</label>
+				<select id="formatOther">
+					<option value="mp4">MP4</option>
+					<option value="mkv">MKV</option>
+					<option value="avi">AVI</option>
+					<option value="mov">MOV</option>
+					<option value="webm">WebM</option>
+				</select>
+			</div>
+		</div>
 		<button type="button" id="btnDownload" class="primary">Скачать</button>
 	</div>
+
+	<!-- YouTube -->
 	<div id="panelYoutube" class="panel">
 		<label>Ссылка на видео YouTube</label>
 		<input type="text" id="urlYoutube" placeholder="youtube.com, youtu.be" />
@@ -137,115 +157,51 @@
 				<option value="audio">Только аудио</option>
 			</select>
 		</div>
+		<div class="row-select">
+			<div>
+				<label>Формат</label>
+				<select id="formatYoutube">
+					<option value="mp4">MP4</option>
+					<option value="mkv">MKV</option>
+					<option value="webm">WebM</option>
+				</select>
+			</div>
+		</div>
 		<button type="button" id="btnDownloadYoutube" class="primary">Скачать</button>
 	</div>
+
+	<!-- Конвертировать -->
+	<div id="panelConvert" class="panel">
+		<label>Исходный файл</label>
+		<div class="row">
+			<input type="text" id="convertSrc" placeholder="Выберите видео-файл" readonly />
+			<button type="button" id="btnConvertFile">Файл</button>
+		</div>
+		<label>Папка сохранения</label>
+		<div class="row">
+			<input type="text" id="convertDir" placeholder="Выберите папку" readonly />
+			<button type="button" id="btnConvertFolder">Папка</button>
+		</div>
+		<div class="row-select">
+			<div>
+				<label>Формат</label>
+				<select id="convertFormat">
+					<option value="mp4">MP4</option>
+					<option value="mkv">MKV</option>
+					<option value="avi">AVI</option>
+					<option value="mov">MOV</option>
+					<option value="webm">WebM</option>
+				</select>
+			</div>
+		</div>
+		<button type="button" id="btnConvert" class="primary">Конвертировать</button>
+	</div>
+
 	<div class="progress-wrap" id="progressWrap" style="display: none;">
 		<div class="progress-bar" id="progressBar" style="width: 0%;"></div>
 	</div>
 	<div id="status"></div>
 
-	<script>
-		const tabOther = document.getElementById("tabOther");
-		const tabYoutube = document.getElementById("tabYoutube");
-		const panelOther = document.getElementById("panelOther");
-		const panelYoutube = document.getElementById("panelYoutube");
-		const urlOther = document.getElementById("urlOther");
-		const urlYoutube = document.getElementById("urlYoutube");
-		const dirEl = document.getElementById("dir");
-		const dirYoutube = document.getElementById("dirYoutube");
-		const qualityEl = document.getElementById("quality");
-		const btnFolder = document.getElementById("btnFolder");
-		const btnFolderYoutube = document.getElementById("btnFolderYoutube");
-		const btnDownload = document.getElementById("btnDownload");
-		const btnDownloadYoutube = document.getElementById("btnDownloadYoutube");
-		const statusEl = document.getElementById("status");
-		const progressWrap = document.getElementById("progressWrap");
-		const progressBar = document.getElementById("progressBar");
-
-		function setStatus(text, type = "") {
-			statusEl.textContent = text;
-			statusEl.className = type;
-		}
-
-		tabOther.addEventListener("click", () => {
-			tabOther.classList.add("active");
-			tabYoutube.classList.remove("active");
-			panelOther.classList.add("active");
-			panelYoutube.classList.remove("active");
-		});
-		tabYoutube.addEventListener("click", () => {
-			tabYoutube.classList.add("active");
-			tabOther.classList.remove("active");
-			panelYoutube.classList.add("active");
-			panelOther.classList.remove("active");
-		});
-
-		btnFolder.addEventListener("click", async () => {
-			const path = await window.api.selectFolder();
-			if (path) dirEl.value = path;
-		});
-		btnFolderYoutube.addEventListener("click", async () => {
-			const path = await window.api.selectFolder();
-			if (path) dirYoutube.value = path;
-		});
-
-		const removeProgressListener = window.api.onDownloadProgress((data) => {
-			if (data.stage === "segments" && data.total > 0) {
-				progressWrap.style.display = "block";
-				progressBar.style.width = (100 * data.current / data.total) + "%";
-				setStatus("Сегменты: " + data.current + " / " + data.total);
-			} else if (data.stage === "download" && data.message) {
-				progressWrap.style.display = "block";
-				setStatus(data.message);
-			} else if (data.stage === "merge") {
-				setStatus("Объединение файлов...");
-			} else if (data.stage === "convert") {
-				setStatus("Конвертация в MP4...");
-			} else if (data.stage === "done" && data.filePath) {
-				progressWrap.style.display = "none";
-				progressBar.style.width = "0%";
-				setStatus("Готово!\n" + data.filePath, "success");
-			}
-		});
-
-		async function doDownload(url, dir, quality) {
-			if (!url) {
-				setStatus("Введите ссылку на видео", "error");
-				return;
-			}
-			if (!dir) {
-				setStatus("Выберите папку для сохранения", "error");
-				return;
-			}
-			btnDownload.disabled = true;
-			btnDownloadYoutube.disabled = true;
-			progressWrap.style.display = "none";
-			progressBar.style.width = "0%";
-			setStatus("Загрузка...");
-			try {
-				const result = await window.api.download(url, dir, quality);
-				if (result.ok) {
-					setStatus("Готово!\n" + result.filePath, "success");
-				} else {
-					progressWrap.style.display = "none";
-					progressBar.style.width = "0%";
-					setStatus(result.error, "error");
-				}
-			} catch (e) {
-				progressWrap.style.display = "none";
-				progressBar.style.width = "0%";
-				setStatus(e.message || "Ошибка", "error");
-			}
-			btnDownload.disabled = false;
-			btnDownloadYoutube.disabled = false;
-		}
-
-		btnDownload.addEventListener("click", () => {
-			doDownload(urlOther.value.trim(), dirEl.value.trim(), undefined);
-		});
-		btnDownloadYoutube.addEventListener("click", () => {
-			doDownload(urlYoutube.value.trim(), dirYoutube.value.trim(), qualityEl.value);
-		});
-	</script>
+	<script src="renderer.js"></script>
 </body>
 </html>

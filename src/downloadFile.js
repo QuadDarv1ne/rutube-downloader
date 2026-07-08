@@ -7,12 +7,12 @@ const fetch = require("node-fetch");
 const _colors = require("ansi-colors");
 const splitFile = require("split-file");
 
-const { rl } = require("./dialogue");
 const { configure } = require("./configure");
 const { createDir, deleteFiles, deleteFile } = require("./fsUtils");
 const { parallelFor } = require("./parallelFor");
 const { getProgress } = require("./progress");
 const { execFFmpeg } = require("./FFmpeg");
+const { getExt } = require("./formats");
 
 const streamPipeline = util.promisify(stream.pipeline);
 
@@ -42,7 +42,7 @@ async function downloadSegment(segmentUrl, segmentFilePath, options) {
 
 exports.downloadFile = async function (cfg, segments, options) {
 	await createDir(cfg.video);
-	await deleteFiles(/^segment-.*\.ts/, cfg.video);
+	await deleteFiles(/^segment-.*\.\w+$/, cfg.video);
 
 	process.title = "DOWNLOAD: " + cfg.title;
 	
@@ -54,7 +54,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 
 	const progress = getProgress();
 	const arrFiles = [];
-	const activeSegmentsNums = [];
+	const activeSegmentsNums = new Set();
 	let progressStopped = false;
 
 	progress.start(segments.length, 0, { filename: " " });
@@ -63,16 +63,19 @@ exports.downloadFile = async function (cfg, segments, options) {
 		cfg.parallelNum,
 		segments,
 		async (segmentUrl, segmentIndex) => {
+			if (cfg.signal && cfg.signal.aborted) {
+				throw new Error("Загрузка отменена");
+			}
 			const ext = path.extname(segmentUrl.split("?")[0]);
 			const segmentFileName =
 				"segment-" + `${segmentIndex + 1}`.padStart(10, "0") + ext;
 			const segmentFilePath = path.join(cfg.video, segmentFileName);
 
-			activeSegmentsNums.push(segmentIndex + 1);
+			activeSegmentsNums.add(segmentIndex + 1);
 			if (!progressStopped) {
 				progress.update(
 					existsCount(arrFiles),
-					joinNames(activeSegmentsNums)
+					joinNames([...activeSegmentsNums].sort((a, b) => a - b))
 				);
 			}
 			if (typeof cfg.onProgress === "function") {
@@ -91,15 +94,12 @@ exports.downloadFile = async function (cfg, segments, options) {
 			}
 
 			arrFiles[segmentIndex] = segmentFilePath;
-			const segmentFileNameIndex = activeSegmentsNums.indexOf(
-				segmentIndex + 1
-			);
-			activeSegmentsNums.splice(segmentFileNameIndex, 1);
+			activeSegmentsNums.delete(segmentIndex + 1);
 
 			if (!progressStopped) {
 				progress.update(
 					existsCount(arrFiles),
-					joinNames(activeSegmentsNums)
+					joinNames([...activeSegmentsNums].sort((a, b) => a - b))
 				);
 			}
 			if (typeof cfg.onProgress === "function") {
@@ -140,9 +140,10 @@ exports.downloadFile = async function (cfg, segments, options) {
 		_colors.yellowBright(`${filesToMerge.length}`),
 		"\n"
 	);
-	await deleteFiles(/^segment-.*\.ts/, cfg.video);
+	await deleteFiles(/^segment-.*\.\w+$/, cfg.video);
 
-	const videoFileName = `${saveTitle}.mp4`;
+	const outExt = getExt(cfg.format || "mp4");
+	const videoFileName = `${saveTitle}.${outExt}`;
 	const videoFilePath = path.join(cfg.video, videoFileName);
 	await deleteFile(videoFilePath);
 	if (typeof cfg.onProgress === "function") cfg.onProgress({ stage: "convert" });
@@ -157,11 +158,18 @@ exports.downloadFile = async function (cfg, segments, options) {
 	console.log("PLEASE WAIT...".padStart(configure.padText, " "));
 	console.log("\u00A0");
 	const segmentsVideoFilePath = path.join(cfg.video, `${saveTitle}${ext}`);
+	const ffmpegOpts = {};
+	if (outExt === "mp4" || outExt === "mov") {
+		ffmpegOpts.bsf = "aac_adtstoasc";
+	}
 	try {
-		await execFFmpeg(segmentsVideoFilePath, videoFilePath);
+		await execFFmpeg(segmentsVideoFilePath, videoFilePath, ffmpegOpts);
 		await deleteFile(segmentsVideoFilePath);
 	} catch (e) {
 		console.log(_colors.redBright("FFmpeg ошибка: " + e.message));
+		if (typeof cfg.onProgress === "function") {
+			cfg.onProgress({ stage: "error", message: "FFmpeg: " + e.message });
+		}
 	}
 	await delay(500);
 	console.log(_colors.yellowBright("DONE!"));

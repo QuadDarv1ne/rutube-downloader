@@ -16,11 +16,27 @@ const findMaxIndex = function(arr) {
 	return maxIndex;
 }
 
+let _rl;
+
+function getRL() {
+	if (!_rl) {
+		_rl = readline.createInterface({
+			input: process.stdin,
+			output: process.stdout,
+		});
+	}
+	return _rl;
+}
+
 module.exports = {
-	rl: readline.createInterface({
-		input: process.stdin,
-		output: process.stdout,
-	}),
+	get rl() { return getRL(); },
+
+	closeRL() {
+		if (_rl) {
+			_rl.close();
+			_rl = null;
+		}
+	},
 
 	selectVideoQuality: (cfg, playlists, arr) => {
 		const widthList = [];
@@ -57,7 +73,7 @@ module.exports = {
 		for (let item of qualitiesOptions) console.log(item);
 
 		return new Promise(resolve =>
-			module.exports.rl.question("", answer => {
+			getRL().question("", answer => {
 				let arrays = [];
 				const index = Number.parseInt(answer);
 				if (!Number.isFinite(index) || index < 0 || index >= playlists.length) {
