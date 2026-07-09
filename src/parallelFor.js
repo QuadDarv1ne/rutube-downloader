@@ -23,10 +23,9 @@ exports.parallelFor = async function (parallelNum, items, fn) {
 		failed = true;
 	}
 
-	await Promise.allSettled(parallels);
+	const settled = await Promise.allSettled(parallels);
 
 	if (failed) {
-		const settled = await Promise.allSettled(parallels);
 		const firstError = settled.find(r => r.status === "rejected");
 		if (firstError) throw firstError.reason;
 	}

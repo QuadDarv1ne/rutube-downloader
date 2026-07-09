@@ -45,11 +45,12 @@ exports.downloadFile = async function (cfg, segments, options) {
 	await deleteFiles(/^segment-.*\.\w+$/, cfg.video);
 
 	process.title = "DOWNLOAD: " + cfg.title;
-	
+
 	console.log("\u00A0");
 	console.log(
 		"DOWNLOAD:".padStart(configure.padText, " "),
-		_colors.yellowBright(cfg.title), "\n"
+		_colors.yellowBright(cfg.title),
+		"\n"
 	);
 
 	const progress = getProgress();
@@ -79,7 +80,11 @@ exports.downloadFile = async function (cfg, segments, options) {
 				);
 			}
 			if (typeof cfg.onProgress === "function") {
-				cfg.onProgress({ stage: "segments", current: existsCount(arrFiles), total: segments.length });
+				cfg.onProgress({
+					stage: "segments",
+					current: existsCount(arrFiles),
+					total: segments.length,
+				});
 			}
 
 			const error = await downloadSegment(
@@ -103,7 +108,11 @@ exports.downloadFile = async function (cfg, segments, options) {
 				);
 			}
 			if (typeof cfg.onProgress === "function") {
-				cfg.onProgress({ stage: "segments", current: existsCount(arrFiles), total: segments.length });
+				cfg.onProgress({
+					stage: "segments",
+					current: existsCount(arrFiles),
+					total: segments.length,
+				});
 			}
 			await delay(50);
 		}
@@ -113,7 +122,8 @@ exports.downloadFile = async function (cfg, segments, options) {
 	await delay(1000);
 	progress.stop();
 
-	if (typeof cfg.onProgress === "function") cfg.onProgress({ stage: "merge" });
+	if (typeof cfg.onProgress === "function")
+		cfg.onProgress({ stage: "merge" });
 
 	const saveTitle = cfg.title;
 	const ext = path.extname(segments[0].split("?")[0]);
@@ -127,10 +137,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 		"FILES INTO A",
 		_colors.yellowBright(`${saveTitle}${ext}`)
 	);
-	console.log(
-		"PLEASE WAIT...".padStart(configure.padText, " "),
-		"\n"
-	);
+	console.log("PLEASE WAIT...".padStart(configure.padText, " "), "\n");
 	await splitFile.mergeFiles(
 		filesToMerge,
 		path.join(cfg.video, `${saveTitle}${ext}`)
@@ -146,7 +153,8 @@ exports.downloadFile = async function (cfg, segments, options) {
 	const videoFileName = `${saveTitle}.${outExt}`;
 	const videoFilePath = path.join(cfg.video, videoFileName);
 	await deleteFile(videoFilePath);
-	if (typeof cfg.onProgress === "function") cfg.onProgress({ stage: "convert" });
+	if (typeof cfg.onProgress === "function")
+		cfg.onProgress({ stage: "convert" });
 	console.log(
 		"CONVERTING:".padStart(configure.padText, " "),
 		_colors.yellowBright(`${saveTitle}${ext}`)
@@ -170,6 +178,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 		if (typeof cfg.onProgress === "function") {
 			cfg.onProgress({ stage: "error", message: "FFmpeg: " + e.message });
 		}
+		throw e;
 	}
 	await delay(500);
 	console.log(_colors.yellowBright("DONE!"));

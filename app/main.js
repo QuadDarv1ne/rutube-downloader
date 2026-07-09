@@ -6,6 +6,7 @@ const { isValidFormat, isValidAudioFormat } = require("../src/formats");
 
 let mainWindow = null;
 let activeDownload = null;
+let activeConvert = null;
 
 function createWindow() {
 	mainWindow = new BrowserWindow({
@@ -27,6 +28,10 @@ function createWindow() {
 			activeDownload.abort();
 			activeDownload = null;
 		}
+		if (activeConvert) {
+			activeConvert.abort();
+			activeConvert = null;
+		}
 	});
 }
 
@@ -34,40 +39,54 @@ app.whenReady().then(createWindow);
 app.on("window-all-closed", () => app.quit());
 
 ipcMain.handle("select-folder", async () => {
-	const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
-		properties: ["openDirectory"],
-		title: "Выберите папку для сохранения",
-	});
-	if (canceled || !filePaths.length) return null;
-	return filePaths[0];
+	try {
+		const { canceled, filePaths } = await dialog.showOpenDialog(
+			mainWindow,
+			{
+				properties: ["openDirectory"],
+				title: "Выберите папку для сохранения",
+			}
+		);
+		if (canceled || !filePaths.length) return null;
+		return filePaths[0];
+	} catch {
+		return null;
+	}
 });
 
 ipcMain.handle("select-file", async () => {
-	const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
-		properties: ["openFile"],
-		title: "Выберите видео-файл",
-		filters: [
+	try {
+		const { canceled, filePaths } = await dialog.showOpenDialog(
+			mainWindow,
 			{
-				name: "Видео",
-				extensions: [
-					"ts",
-					"mp4",
-					"mkv",
-					"avi",
-					"mov",
-					"webm",
-					"flv",
-					"mpg",
-					"mpeg",
-					"m4v",
-					"3gp",
+				properties: ["openFile"],
+				title: "Выберите видео-файл",
+				filters: [
+					{
+						name: "Видео",
+						extensions: [
+							"ts",
+							"mp4",
+							"mkv",
+							"avi",
+							"mov",
+							"webm",
+							"flv",
+							"mpg",
+							"mpeg",
+							"m4v",
+							"3gp",
+						],
+					},
+					{ name: "Все файлы", extensions: ["*"] },
 				],
-			},
-			{ name: "Все файлы", extensions: ["*"] },
-		],
-	});
-	if (canceled || !filePaths.length) return null;
-	return filePaths[0];
+			}
+		);
+		if (canceled || !filePaths.length) return null;
+		return filePaths[0];
+	} catch {
+		return null;
+	}
 });
 
 ipcMain.handle(
@@ -142,17 +161,27 @@ ipcMain.handle("convert", async (_, { src, dir, format }) => {
 	if (!isValidFormat(format)) {
 		throw new Error("Неподдерживаемый формат: " + format);
 	}
+	if (activeConvert) {
+		throw new Error("Операция уже выполняется");
+	}
 	const sendProgress = data => {
 		if (mainWindow && !mainWindow.isDestroyed()) {
 			mainWindow.webContents.send("download-progress", data);
 		}
 	};
+	const controller = new AbortController();
+	activeConvert = controller;
 	try {
 		const filePath = await convertFile(src, dir, format, sendProgress);
 		sendProgress({ stage: "done", filePath });
 		return { ok: true, filePath };
 	} catch (e) {
+		if (controller.signal.aborted) {
+			return { ok: false, error: "Операция отменена" };
+		}
 		return { ok: false, error: e.message };
+	} finally {
+		if (activeConvert === controller) activeConvert = null;
 	}
 });
 
@@ -161,16 +190,26 @@ ipcMain.handle("extract-audio", async (_, { src, dir, format }) => {
 	if (!isValidAudioFormat(format)) {
 		throw new Error("Неподдерживаемый аудио-формат: " + format);
 	}
+	if (activeConvert) {
+		throw new Error("Операция уже выполняется");
+	}
 	const sendProgress = data => {
 		if (mainWindow && !mainWindow.isDestroyed()) {
 			mainWindow.webContents.send("download-progress", data);
 		}
 	};
+	const controller = new AbortController();
+	activeConvert = controller;
 	try {
 		const filePath = await extractAudio(src, dir, format, sendProgress);
 		sendProgress({ stage: "done", filePath });
 		return { ok: true, filePath };
 	} catch (e) {
+		if (controller.signal.aborted) {
+			return { ok: false, error: "Операция отменена" };
+		}
 		return { ok: false, error: e.message };
+	} finally {
+		if (activeConvert === controller) activeConvert = null;
 	}
 });

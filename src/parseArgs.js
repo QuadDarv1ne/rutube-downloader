@@ -27,11 +27,11 @@ exports.parseArgs = args => {
 		const argument = args[i];
 		if (argument.startsWith("-")) {
 			try {
-				tryMatchOption(state, argument, args[i + 1]);
+				const consumed = tryMatchOption(state, argument, args[i + 1]);
+				if (consumed) i++;
 			} catch (e) {
 				console.log(_colors.redBright("Ошибка: " + e.message));
 			}
-			i++;
 		} else {
 			try {
 				state.files.push({
@@ -121,15 +121,17 @@ function showHelp() {
 
 function tryMatchOption(state, option, value) {
 	switch (option) {
-		case "-t":
+		case "-t": {
 			const file = state.files[state.files.length - 1];
 			if (!file)
 				throw new Error(
 					"Опция -t, может быть использована только после url"
 				);
-			return (file.title = value);
+			file.title = value;
+			return true;
+		}
 
-		case "-p":
+		case "-p": {
 			state.parallelSegments = Number.parseInt(value);
 			if (
 				!Number.isFinite(state.parallelSegments) ||
@@ -138,10 +140,12 @@ function tryMatchOption(state, option, value) {
 				throw new Error(
 					"Количество одновременных загрузок должно быть числом больше 0"
 				);
-			return;
+			return true;
+		}
 
 		case "-q":
-			return (state.manualVideoQuality = true);
+			state.manualVideoQuality = true;
+			return false;
 
 		case "-f": {
 			const fmt = value?.toLowerCase();
@@ -151,7 +155,8 @@ function tryMatchOption(state, option, value) {
 						(value || "") +
 						". Доступны: mp4, mkv, avi, mov, webm"
 				);
-			return (state.format = fmt);
+			state.format = fmt;
+			return true;
 		}
 
 		case "-a": {
@@ -162,7 +167,8 @@ function tryMatchOption(state, option, value) {
 						(value || "") +
 						". Доступны: mp3, wav, flac"
 				);
-			return (state.audioFormat = afmt);
+			state.audioFormat = afmt;
+			return true;
 		}
 
 		case "-h":

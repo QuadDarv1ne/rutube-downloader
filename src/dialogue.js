@@ -2,7 +2,7 @@ const readline = require("readline");
 const _colors = require("ansi-colors");
 const { configure } = require("./configure");
 
-const findMaxIndex = function(arr) {
+const findMaxIndex = function (arr) {
 	let max = arr[0],
 		maxIndex = 0;
 	for (let i = 1, l = arr.length; i < l; i++) {
@@ -14,7 +14,7 @@ const findMaxIndex = function(arr) {
 	}
 
 	return maxIndex;
-}
+};
 
 let _rl;
 
@@ -29,7 +29,9 @@ function getRL() {
 }
 
 module.exports = {
-	get rl() { return getRL(); },
+	get rl() {
+		return getRL();
+	},
 
 	closeRL() {
 		if (_rl) {
@@ -45,30 +47,45 @@ module.exports = {
 			const { width, height } = attributes.RESOLUTION;
 			widthList.push(width);
 			let codec = attributes.CODECS ? `(${attributes.CODECS})` : "";
-			return `${index}: ` + _colors.yellowBright(`${width}x${height} `.padStart(10, ` `)) + _colors.cyan(codec);
+			return (
+				`${index}: ` +
+				_colors.yellowBright(`${width}x${height} `.padStart(10, ` `)) +
+				_colors.cyan(codec)
+			);
 		});
 
 		if (!cfg.manualVideoQuality) {
 			let ind = findMaxIndex(widthList);
-			arrays = [playlists[ind]["uri"], {}, playlists[ind].attributes.CODECS];
-			if(arr){
-				arrays.push( playlists[ind].segments );
+			arrays = [
+				playlists[ind]["uri"],
+				{ index: ind, label: qualitiesOptions[ind] },
+				playlists[ind].attributes.CODECS,
+			];
+			if (arr) {
+				arrays.push(playlists[ind].segments);
 			}
 			return arrays;
 		}
 
 		if (cfg.quality) {
 			const selectedIndex = qualitiesOptions.indexOf(cfg.quality.label);
-			if (selectedIndex === cfg.quality.index){
-				arrays = [playlists[selectedIndex]["uri"], cfg.quality, playlists[selectedIndex].attributes.CODECS];
-				if(arr){
-					arrays.push( playlists[selectedIndex].segments );
+			if (selectedIndex === cfg.quality.index) {
+				arrays = [
+					playlists[selectedIndex]["uri"],
+					cfg.quality,
+					playlists[selectedIndex].attributes.CODECS,
+				];
+				if (arr) {
+					arrays.push(playlists[selectedIndex].segments);
 				}
 				return arrays;
 			}
 		}
 		console.log(`\u00A0`);
-		console.log(`Выберите качество для видео: `.padStart(configure.padText) + _colors.yellowBright(`${cfg.title}`));
+		console.log(
+			`Выберите качество для видео: `.padStart(configure.padText) +
+				_colors.yellowBright(`${cfg.title}`)
+		);
 		console.log(`\u00A0`);
 		for (let item of qualitiesOptions) console.log(item);
 
@@ -76,10 +93,22 @@ module.exports = {
 			getRL().question("", answer => {
 				let arrays = [];
 				const index = Number.parseInt(answer);
-				if (!Number.isFinite(index) || index < 0 || index >= playlists.length) {
-					console.log(_colors.redBright("Неверный выбор, выбрано качество по умолчанию"));
+				if (
+					!Number.isFinite(index) ||
+					index < 0 ||
+					index >= playlists.length
+				) {
+					console.log(
+						_colors.redBright(
+							"Неверный выбор, выбрано качество по умолчанию"
+						)
+					);
 					const ind = findMaxIndex(widthList);
-					arrays = [playlists[ind]["uri"], {}, playlists[ind].attributes.CODECS];
+					arrays = [
+						playlists[ind]["uri"],
+						{ index: ind, label: qualitiesOptions[ind] },
+						playlists[ind].attributes.CODECS,
+					];
 					if (arr) {
 						arrays.push(playlists[ind].segments);
 					}
@@ -92,10 +121,10 @@ module.exports = {
 				arrays = [
 					playlists[index]["uri"],
 					{ index, label: qualitiesOptions[index] },
-					playlists[index].attributes.CODECS
+					playlists[index].attributes.CODECS,
 				];
-				if(arr){
-					arrays.push( playlists[index].segments );
+				if (arr) {
+					arrays.push(playlists[index].segments);
 				}
 				resolve(arrays);
 			})

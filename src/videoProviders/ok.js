@@ -1,4 +1,3 @@
-const fetch = require("node-fetch");
 const path = require("node:path");
 const { getManifest } = require("../m3u8Utils");
 const { selectVideoQuality } = require("../dialogue");
@@ -12,7 +11,8 @@ module.exports = {
 	mayUse: url => regex_ok.test(url),
 
 	loadVideo: async cfg => {
-		const regex = /<div\s+data-module="OKVideo".+data-options="(.+)"\s+data-player-container-id=/;
+		const regex =
+			/<div\s+data-module="OKVideo".+data-options="(.+)"\s+data-player-container-id=/;
 
 		const m = regex_ok.exec(cfg.url);
 		if (!m) {
@@ -52,10 +52,7 @@ module.exports = {
 		const hlsUrl = new URL(url);
 
 		cfg.title = sanitizeTitle(cfg.title, metadata.movie.title);
-		const videoInfo = await getManifest(
-			url,
-			"Не удалось получить видео:"
-		);
+		const videoInfo = await getManifest(url, "Не удалось получить видео:");
 
 		process.title = "DOWNLOAD: " + cfg.title;
 

@@ -36,6 +36,12 @@ function setStatus(text, type = "") {
 	statusEl.className = type;
 }
 
+function resetUI() {
+	setStatus("");
+	progressWrap.style.display = "none";
+	progressBar.style.width = "0%";
+}
+
 function switchTab(activeTab) {
 	[tabOther, tabYoutube, tabConvert].forEach(t =>
 		t.classList.remove("active")
@@ -46,6 +52,7 @@ function switchTab(activeTab) {
 	activeTab.classList.add("active");
 	const panelId = "panel" + activeTab.id.slice(3);
 	document.getElementById(panelId).classList.add("active");
+	resetUI();
 }
 
 tabOther.addEventListener("click", () => switchTab(tabOther));
@@ -114,6 +121,7 @@ async function doDownload(url, dir, quality, format, audioFormat) {
 	}
 	btnDownload.disabled = true;
 	btnDownloadYoutube.disabled = true;
+	btnConvert.disabled = true;
 	progressWrap.style.display = "none";
 	progressBar.style.width = "0%";
 	setStatus("Загрузка...");
@@ -139,6 +147,7 @@ async function doDownload(url, dir, quality, format, audioFormat) {
 	}
 	btnDownload.disabled = false;
 	btnDownloadYoutube.disabled = false;
+	btnConvert.disabled = false;
 }
 
 async function doConvert(src, dir) {
@@ -151,6 +160,8 @@ async function doConvert(src, dir) {
 		return;
 	}
 	btnConvert.disabled = true;
+	btnDownload.disabled = true;
+	btnDownloadYoutube.disabled = true;
 	progressWrap.style.display = "none";
 	progressBar.style.width = "0%";
 
@@ -173,6 +184,8 @@ async function doConvert(src, dir) {
 		setStatus(e.message || "Ошибка", "error");
 	}
 	btnConvert.disabled = false;
+	btnDownload.disabled = false;
+	btnDownloadYoutube.disabled = false;
 }
 
 btnDownload.addEventListener("click", () => {

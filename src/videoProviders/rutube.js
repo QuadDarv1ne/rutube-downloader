@@ -1,4 +1,3 @@
-const fetch = require("node-fetch");
 const path = require("node:path");
 const { getManifest } = require("../m3u8Utils");
 const { selectVideoQuality } = require("../dialogue");
@@ -37,10 +36,15 @@ module.exports = {
 		/**
 		 * Если получили ошибку о видео
 		 */
-		if (typeof json.detail === "object" || typeof json.detail === "string") {
-			const detailMsg = typeof json.detail === "string"
-				? json.detail
-				: json.detail?.languages?.[0]?.title ?? "неизвестная ошибка";
+		if (
+			typeof json.detail === "object" ||
+			typeof json.detail === "string"
+		) {
+			const detailMsg =
+				typeof json.detail === "string"
+					? json.detail
+					: json.detail?.languages?.[0]?.title ??
+					  "неизвестная ошибка";
 			throw new Error(
 				`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${detailMsg}`
 			);
@@ -65,7 +69,8 @@ module.exports = {
 		const myURL = new URL(m3u8);
 		const pathname = myURL.pathname.split("/");
 		pathname.pop();
-		const urlPrefix = myURL.protocol + "//" + myURL.host + "/" + pathname.join("/") + "/";
+		const urlPrefix =
+			myURL.protocol + "//" + myURL.host + "/" + pathname.join("/") + "/";
 
 		// Получаем плейлист с сегментами
 		const segmentsInfo = await getManifest(
