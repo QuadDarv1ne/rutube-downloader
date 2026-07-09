@@ -1,7 +1,7 @@
 const path = require("node:path");
 const { configure } = require("./configure");
 const { selectVideoProvider } = require("./videoProviders");
-const { isValidFormat } = require("./formats");
+const { isValidFormat, isValidAudioFormat } = require("./formats");
 const _colors = require("ansi-colors");
 
 exports.parseArgs = args => {
@@ -15,6 +15,7 @@ exports.parseArgs = args => {
 		manualVideoQuality: false,
 		quality: null,
 		format: "mp4",
+		audioFormat: null,
 	};
 
 	if (args.length < 3) {
@@ -49,35 +50,68 @@ exports.parseArgs = args => {
 const help = [
 	" ",
 	"Использовать:",
-	_colors.yellowBright("node index.js url1 [url2] [url3 -t custom_title] [url4] [...] [-p 10] [-q] [-f mp4]"),
+	_colors.yellowBright(
+		"node index.js url1 [url2] [url3 -t custom_title] [url4] [...] [-p 10] [-q] [-f mp4] [-a mp3]"
+	),
 	"",
 	"Опции:",
-	" " + _colors.yellowBright("-t <title>") + " \t задать имя файла для предыдущего url",
-	" " + _colors.yellowBright("-p <int>") + " \t количество одновременных загрузок, по умолчанию 5",
-	" " + _colors.yellowBright("-f <format>") + " \t формат выходного файла: mp4, mkv, avi, mov, webm (по умолчанию mp4)",
-	" " + _colors.yellowBright("-q") + " \t\t скрипт будет спрашивать о том, какого качества видео загружать, по умолчанию выбирает наилучшее",
+	" " +
+		_colors.yellowBright("-t <title>") +
+		" \t задать имя файла для предыдущего url",
+	" " +
+		_colors.yellowBright("-p <int>") +
+		" \t количество одновременных загрузок, по умолчанию 5",
+	" " +
+		_colors.yellowBright("-f <format>") +
+		" \t формат выходного файла: mp4, mkv, avi, mov, webm (по умолчанию mp4)",
+	" " +
+		_colors.yellowBright("-a <format>") +
+		" \t извлечь аудио в формате: mp3, wav, flac (после загрузки видео)",
+	" " +
+		_colors.yellowBright("-q") +
+		" \t\t скрипт будет спрашивать о том, какого качества видео загружать, по умолчанию выбирает наилучшее",
 	" " + _colors.yellowBright("-h") + " \t\t отобразить справку",
 	" ",
 	"Примеры использования:",
 	"",
 	" + загрузить видео с rutube, имя файла будет взято как у видео по ссылке, либо из аргумента",
-	_colors.yellowBright("node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/"),
+	_colors.yellowBright(
+		"node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/"
+	),
 	"",
 	" + загрузить видео с vkvideo, имя файла будет взято как у видео по ссылке, либо из аргумента",
-	_colors.yellowBright("node index.js https://vkvideo.ru/video-18255722_456244249"),
+	_colors.yellowBright(
+		"node index.js https://vkvideo.ru/video-18255722_456244249"
+	),
 	"",
 	" + загрузить видео с aser.pro, имя файла будет взято из аргумента",
-	_colors.yellowBright("node index.js https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8 -t \"Поднятие уровня в одиночку серия 01\""),
+	_colors.yellowBright(
+		'node index.js https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8 -t "Поднятие уровня в одиночку серия 01"'
+	),
 	"",
 	" + загрузить несколько файлов",
-	_colors.yellowBright("node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ -t \"Отмеченный богом\"" +
-		" https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8 -t \"Поднятие уровня в одиночку серия 01\"" +
-		" https://vkvideo.ru/video-18255722_456244249 -t \"Скачено с VK\""),
+	_colors.yellowBright(
+		'node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ -t "Отмеченный богом"' +
+			' https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8 -t "Поднятие уровня в одиночку серия 01"' +
+			' https://vkvideo.ru/video-18255722_456244249 -t "Скачено с VK"'
+	),
 	"",
 	" + либо загрузить несколько файлов без параметров",
-	_colors.yellowBright("node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/" +
-		" https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8" +
-		" https://vkvideo.ru/video-18255722_456244249"),
+	_colors.yellowBright(
+		"node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/" +
+			" https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8" +
+			" https://vkvideo.ru/video-18255722_456244249"
+	),
+	"",
+	" + загрузить видео и извлечь аудио в MP3",
+	_colors.yellowBright(
+		"node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ -a mp3"
+	),
+	"",
+	" + загрузить видео и извлечь аудио в FLAC",
+	_colors.yellowBright(
+		"node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ -a flac"
+	),
 	"",
 ];
 
@@ -112,8 +146,23 @@ function tryMatchOption(state, option, value) {
 		case "-f": {
 			const fmt = value?.toLowerCase();
 			if (!fmt || !isValidFormat(fmt))
-				throw new Error("Неподдерживаемый формат: " + (value || "") + ". Доступны: mp4, mkv, avi, mov, webm");
+				throw new Error(
+					"Неподдерживаемый формат: " +
+						(value || "") +
+						". Доступны: mp4, mkv, avi, mov, webm"
+				);
 			return (state.format = fmt);
+		}
+
+		case "-a": {
+			const afmt = value?.toLowerCase();
+			if (!afmt || !isValidAudioFormat(afmt))
+				throw new Error(
+					"Неподдерживаемый аудио-формат: " +
+						(value || "") +
+						". Доступны: mp3, wav, flac"
+				);
+			return (state.audioFormat = afmt);
 		}
 
 		case "-h":

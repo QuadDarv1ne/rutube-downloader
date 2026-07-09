@@ -10,9 +10,11 @@
  */
 
 const _colors = require("ansi-colors");
+const path = require("node:path");
 const { configure } = require("./src/configure");
 const { closeRL } = require("./src/dialogue");
 const { parseArgs } = require("./src/parseArgs");
+const { extractAudio } = require("./src/convert");
 const downFiles = [];
 const errorFiles = [];
 /**
@@ -23,17 +25,19 @@ const globalTitle = process.title;
 /**
  * Очищаем консоль
  */
-process.stdout.write('\033c');
+process.stdout.write("\033c");
 
 /**
  * Перехват ошибок
  */
-process.on('uncaughtException', (err) => {
+process.on("uncaughtException", err => {
 	console.log("\u00A0");
-	console.log(_colors.redBright("Критическая ошибка: " + (err.message || err)));
+	console.log(
+		_colors.redBright("Критическая ошибка: " + (err.message || err))
+	);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
+process.on("unhandledRejection", (reason, promise) => {
 	console.log("\u00A0");
 	const msg = reason instanceof Error ? reason.message : String(reason);
 	console.log(_colors.redBright(msg));
@@ -56,11 +60,32 @@ async function run() {
 		console.log(`\u00A0`);
 		try {
 			process.title = `LOAD VIDEO INFO: ${file.url}`;
-			console.log(`LOAD VIDEO INFO:`.padStart(configure.padText, " "), _colors.yellowBright(file.url));
+			console.log(
+				`LOAD VIDEO INFO:`.padStart(configure.padText, " "),
+				_colors.yellowBright(file.url)
+			);
 			[name, quality] = await file.videoProvider.loadVideo(cfg);
 			file.name = name;
 			state.quality = quality;
 			downFiles.push(name);
+			if (state.audioFormat) {
+				const videoPath = path.join(cfg.video, name);
+				console.log(
+					`EXTRACTING AUDIO:`.padStart(configure.padText, " "),
+					_colors.yellowBright(
+						`${name} → ${state.audioFormat.toUpperCase()}`
+					)
+				);
+				await extractAudio(videoPath, cfg.video, state.audioFormat);
+				console.log(
+					`AUDIO EXTRACTED:`.padStart(configure.padText, " "),
+					_colors.yellowBright(
+						`${path.basename(name, path.extname(name))}.${
+							state.audioFormat
+						}`
+					)
+				);
+			}
 		} catch (e) {
 			process.title = `Error: ${file.url}`;
 			//console.log(e);
@@ -78,13 +103,27 @@ async function run() {
 run()
 	.then(state => {
 		console.log("\u00A0");
-		if(downFiles.length){
-			console.log(`Загружено файлов:`.padStart(configure.padEndText, " "), _colors.yellowBright(`${downFiles.length}`));
-			for (let file of downFiles) console.log(_colors.cyan("+ ".padStart(configure.padEndText, " ")), _colors.yellowBright(file));
+		if (downFiles.length) {
+			console.log(
+				`Загружено файлов:`.padStart(configure.padEndText, " "),
+				_colors.yellowBright(`${downFiles.length}`)
+			);
+			for (let file of downFiles)
+				console.log(
+					_colors.cyan("+ ".padStart(configure.padEndText, " ")),
+					_colors.yellowBright(file)
+				);
 		}
-		if(errorFiles.length){
-			console.log(`Незагруженные файлы:`.padStart(configure.padEndText, " "), _colors.redBright(`${errorFiles.length}`));
-			for (let file of errorFiles) console.log(_colors.cyan("+ ".padStart(configure.padEndText, " ")), _colors.redBright(file));
+		if (errorFiles.length) {
+			console.log(
+				`Незагруженные файлы:`.padStart(configure.padEndText, " "),
+				_colors.redBright(`${errorFiles.length}`)
+			);
+			for (let file of errorFiles)
+				console.log(
+					_colors.cyan("+ ".padStart(configure.padEndText, " ")),
+					_colors.redBright(file)
+				);
 		}
 	})
 	.finally(() => {
@@ -94,8 +133,32 @@ run()
 		 * Код ниже удалять запрещено!
 		 */
 		console.log("\u00A0");
-		console.log("\u00A0\u00A0\u00A0" + _colors.bgWhite( _colors.white("\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588")) + "\u00A0");
-		console.log("\u00A0\u00A0\u00A0" + _colors.bgBlue(  _colors.white("\u0020\u0023\u0421\u0432\u043e\u0438\u0445\u041d\u0435\u0411\u0440\u043e\u0441\u0430\u0435\u043c\u0020")) + "\u00A0");
-		console.log("\u00A0\u00A0\u00A0" + _colors.bgRed(   _colors.red(  "\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588")) + "\u00A0");
+		console.log(
+			"\u00A0\u00A0\u00A0" +
+				_colors.bgWhite(
+					_colors.white(
+						"\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588"
+					)
+				) +
+				"\u00A0"
+		);
+		console.log(
+			"\u00A0\u00A0\u00A0" +
+				_colors.bgBlue(
+					_colors.white(
+						"\u0020\u0023\u0421\u0432\u043e\u0438\u0445\u041d\u0435\u0411\u0440\u043e\u0441\u0430\u0435\u043c\u0020"
+					)
+				) +
+				"\u00A0"
+		);
+		console.log(
+			"\u00A0\u00A0\u00A0" +
+				_colors.bgRed(
+					_colors.red(
+						"\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588"
+					)
+				) +
+				"\u00A0"
+		);
 		console.log("\u00A0");
 	});

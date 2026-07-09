@@ -1,8 +1,8 @@
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("node:path");
 const { runDownload } = require("../src/runDownload");
-const { convertFile } = require("../src/convert");
-const { isValidFormat } = require("../src/formats");
+const { convertFile, extractAudio } = require("../src/convert");
+const { isValidFormat, isValidAudioFormat } = require("../src/formats");
 
 let mainWindow = null;
 let activeDownload = null;
@@ -47,7 +47,22 @@ ipcMain.handle("select-file", async () => {
 		properties: ["openFile"],
 		title: "Выберите видео-файл",
 		filters: [
-			{ name: "Видео", extensions: ["ts", "mp4", "mkv", "avi", "mov", "webm", "flv", "mpg", "mpeg", "m4v", "3gp"] },
+			{
+				name: "Видео",
+				extensions: [
+					"ts",
+					"mp4",
+					"mkv",
+					"avi",
+					"mov",
+					"webm",
+					"flv",
+					"mpg",
+					"mpeg",
+					"m4v",
+					"3gp",
+				],
+			},
 			{ name: "Все файлы", extensions: ["*"] },
 		],
 	});
@@ -55,58 +70,104 @@ ipcMain.handle("select-file", async () => {
 	return filePaths[0];
 });
 
-ipcMain.handle("download", async (_, { url, dir, quality, format }) => {
-	if (!url || !dir) throw new Error("Укажите ссылку и папку");
-	let parsedUrl;
-	try {
-		parsedUrl = new URL(url);
-	} catch {
-		throw new Error("Некорректная ссылка");
-	}
-	if (!["http:", "https:"].includes(parsedUrl.protocol)) {
-		throw new Error("Поддерживаются только HTTP/HTTPS ссылки");
-	}
-	if (format && !isValidFormat(format)) {
-		throw new Error("Неподдерживаемый формат: " + format);
-	}
-	const sendProgress = (data) => {
-		if (mainWindow && !mainWindow.isDestroyed()) {
-			mainWindow.webContents.send("download-progress", data);
+ipcMain.handle(
+	"download",
+	async (_, { url, dir, quality, format, audioFormat }) => {
+		if (!url || !dir) throw new Error("Укажите ссылку и папку");
+		let parsedUrl;
+		try {
+			parsedUrl = new URL(url);
+		} catch {
+			throw new Error("Некорректная ссылка");
 		}
-	};
-
-	if (activeDownload) {
-		throw new Error("Загрузка уже выполняется");
-	}
-
-	const controller = new AbortController();
-	activeDownload = controller;
-	try {
-		const filePath = await runDownload(url, dir, { onProgress: sendProgress, quality, format, signal: controller.signal });
-		sendProgress({ stage: "done", filePath });
-		return { ok: true, filePath };
-	} catch (e) {
-		if (controller.signal.aborted) {
-			return { ok: false, error: "Загрузка отменена" };
+		if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+			throw new Error("Поддерживаются только HTTP/HTTPS ссылки");
 		}
-		return { ok: false, error: e.message };
-	} finally {
-		if (activeDownload === controller) activeDownload = null;
+		if (format && !isValidFormat(format)) {
+			throw new Error("Неподдерживаемый формат: " + format);
+		}
+		if (audioFormat && !isValidAudioFormat(audioFormat)) {
+			throw new Error("Неподдерживаемый аудио-формат: " + audioFormat);
+		}
+		const sendProgress = data => {
+			if (mainWindow && !mainWindow.isDestroyed()) {
+				mainWindow.webContents.send("download-progress", data);
+			}
+		};
+
+		if (activeDownload) {
+			throw new Error("Загрузка уже выполняется");
+		}
+
+		const controller = new AbortController();
+		activeDownload = controller;
+		try {
+			const filePath = await runDownload(url, dir, {
+				onProgress: sendProgress,
+				quality,
+				format,
+				signal: controller.signal,
+			});
+			if (audioFormat) {
+				sendProgress({
+					stage: "convert",
+					message: `Извлечение аудио: ${path.basename(
+						filePath
+					)} → ${audioFormat.toUpperCase()}`,
+				});
+				const audioPath = await extractAudio(
+					filePath,
+					dir,
+					audioFormat,
+					sendProgress
+				);
+				sendProgress({ stage: "done", filePath: audioPath });
+				return { ok: true, filePath: audioPath };
+			}
+			sendProgress({ stage: "done", filePath });
+			return { ok: true, filePath };
+		} catch (e) {
+			if (controller.signal.aborted) {
+				return { ok: false, error: "Загрузка отменена" };
+			}
+			return { ok: false, error: e.message };
+		} finally {
+			if (activeDownload === controller) activeDownload = null;
+		}
 	}
-});
+);
 
 ipcMain.handle("convert", async (_, { src, dir, format }) => {
 	if (!src || !dir) throw new Error("Укажите исходный файл и папку");
 	if (!isValidFormat(format)) {
 		throw new Error("Неподдерживаемый формат: " + format);
 	}
-	const sendProgress = (data) => {
+	const sendProgress = data => {
 		if (mainWindow && !mainWindow.isDestroyed()) {
 			mainWindow.webContents.send("download-progress", data);
 		}
 	};
 	try {
 		const filePath = await convertFile(src, dir, format, sendProgress);
+		sendProgress({ stage: "done", filePath });
+		return { ok: true, filePath };
+	} catch (e) {
+		return { ok: false, error: e.message };
+	}
+});
+
+ipcMain.handle("extract-audio", async (_, { src, dir, format }) => {
+	if (!src || !dir) throw new Error("Укажите исходный файл и папку");
+	if (!isValidAudioFormat(format)) {
+		throw new Error("Неподдерживаемый аудио-формат: " + format);
+	}
+	const sendProgress = data => {
+		if (mainWindow && !mainWindow.isDestroyed()) {
+			mainWindow.webContents.send("download-progress", data);
+		}
+	};
+	try {
+		const filePath = await extractAudio(src, dir, format, sendProgress);
 		sendProgress({ stage: "done", filePath });
 		return { ok: true, filePath };
 	} catch (e) {
