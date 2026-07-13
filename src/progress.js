@@ -32,7 +32,7 @@ function formatBar(optionsBar, paramsBar, payloadBar) {
 	const stopTime = Date.now();
 	const elapsedTime = formatTime(Math.round(stopTime - paramsBar.startTime));
 
-	const provider = payloadBar.provider === "vimeo" ? "" : " " +
+	const provider = " " +
 		_colors.white("|") +
 		" " +
 		autopadding(paramsBar.value, `${paramsBar.total}`.length) +

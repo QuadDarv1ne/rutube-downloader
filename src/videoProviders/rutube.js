@@ -60,10 +60,11 @@ module.exports = {
 			"Не удалось получить видео:"
 		);
 
-		const [m3u8, quality] = await selectVideoQuality(
-			cfg,
-			videoInfo["playlists"]
-		);
+		const playlists = videoInfo["playlists"];
+		if (!playlists || !playlists.length) {
+			throw new Error("Не удалось получить список качеств видео: " + cfg.url);
+		}
+		const [m3u8, quality] = await selectVideoQuality(cfg, playlists);
 
 		// Получаем ссылку для составления будущих ссылок на сегмент
 		const myURL = new URL(m3u8);
@@ -77,6 +78,9 @@ module.exports = {
 			m3u8,
 			"Не удалось получить сегменты:"
 		);
+		if (!segmentsInfo.segments || !segmentsInfo.segments.length) {
+			throw new Error("Не удалось получить список сегментов видео: " + cfg.url);
+		}
 		const segmentsUrls = segmentsInfo.segments.map(
 			segment => urlPrefix + segment["uri"]
 		);

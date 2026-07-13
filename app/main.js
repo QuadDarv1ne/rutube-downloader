@@ -49,7 +49,8 @@ ipcMain.handle("select-folder", async () => {
 		);
 		if (canceled || !filePaths.length) return null;
 		return filePaths[0];
-	} catch {
+	} catch (e) {
+		console.error("Ошибка диалога выбора папки:", e);
 		return null;
 	}
 });
@@ -84,7 +85,8 @@ ipcMain.handle("select-file", async () => {
 		);
 		if (canceled || !filePaths.length) return null;
 		return filePaths[0];
-	} catch {
+	} catch (e) {
+		console.error("Ошибка диалога выбора файла:", e);
 		return null;
 	}
 });

@@ -88,7 +88,6 @@ async function run() {
 			}
 		} catch (e) {
 			process.title = `Error: ${file.url}`;
-			//console.log(e);
 			console.log("\u00A0");
 			console.log(_colors.redBright(e.message));
 			errorFiles.push(file.url);

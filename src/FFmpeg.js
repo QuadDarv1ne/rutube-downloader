@@ -10,7 +10,7 @@ function findFFmpeg() {
 		execFileSync("ffmpeg", ["-version"], { stdio: "ignore" });
 		ffmpegPath = "ffmpeg";
 	} catch {
-		ffmpegPath = path.join(__dirname, "..", "bin", "ffmpeg");
+		ffmpegPath = path.join(__dirname, "..", "bin", process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg");
 	}
 	return ffmpegPath;
 }

@@ -15,10 +15,11 @@ module.exports = {
 			"Не удалось получить видео:"
 		);
 		cfg.title = sanitizeTitle(cfg.title);
-		const [playlist, quality] = await selectVideoQuality(
-			cfg,
-			videoInfo["playlists"]
-		);
+		const playlists = videoInfo["playlists"];
+		if (!playlists || !playlists.length) {
+			throw new Error("Не удалось получить список качеств видео: " + cfg.url);
+		}
+		const [playlist, quality] = await selectVideoQuality(cfg, playlists);
 
 		const segmentsUrl = new URL(playlist, cfg.url).href;
 		const segmentsInfo = await getManifest(
@@ -26,8 +27,11 @@ module.exports = {
 			"Не удалось получить сегменты:"
 		);
 
-		const segmentsUrls = segmentsInfo["segments"].map(segment =>
-			(new URL(segment["uri"], segmentsUrl)).href
+		if (!segmentsInfo.segments || !segmentsInfo.segments.length) {
+			throw new Error("Не удалось получить список сегментов видео: " + cfg.url);
+		}
+		const segmentsUrls = segmentsInfo.segments.map(segment =>
+			new URL(segment["uri"], segmentsUrl).href
 		);
 		cfg.video = path.join(cfg.video, cfg.title);
 		const name = await downloadFile(cfg, segmentsUrls);

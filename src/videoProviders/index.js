@@ -13,7 +13,7 @@ exports.selectVideoProvider = function (url) {
 	return {
 		mayUse: () => false,
 		loadVideo: function (cfg) {
-			throw new Error("Не найдено загрузчика для: " + cfg.url);
+			throw new Error("Не найден загрузчик для: " + cfg.url);
 		},
 	};
 };

@@ -9,7 +9,7 @@ const { selectVideoProvider } = require("./videoProviders");
 async function runDownload(url, outputDir, options = {}) {
 	const provider = selectVideoProvider(url);
 	if (!provider.mayUse(url)) {
-		throw new Error("Не найдено загрузчика для: " + url);
+		throw new Error("Не найден загрузчик для: " + url);
 	}
 	const cfg = {
 		root: outputDir,

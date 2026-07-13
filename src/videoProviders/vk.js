@@ -169,10 +169,11 @@ module.exports = {
 				options
 			);
 
-			const [playlist, quality] = await selectVideoQuality(
-				cfg,
-				hls["playlists"]
-			);
+			const playlists = hls["playlists"];
+			if (!playlists || !playlists.length) {
+				throw new Error("Не удалось получить список качеств видео: " + cfg.url);
+			}
+			const [playlist, quality] = await selectVideoQuality(cfg, playlists);
 
 			const myURL = new URL(hlsUrl);
 			const segmentsBase = new URL(myURL.protocol + "//" + myURL.host + playlist).href;
@@ -183,7 +184,10 @@ module.exports = {
 				options
 			);
 
-			const segmentsUrls = segmentsInfo["segments"].map(segment =>
+			if (!segmentsInfo.segments || !segmentsInfo.segments.length) {
+				throw new Error("Не удалось получить список сегментов видео: " + cfg.url);
+			}
+			const segmentsUrls = segmentsInfo.segments.map(segment =>
 				new URL(segmentsBase + segment["uri"]).href
 			);
 			cfg.video = path.join(cfg.video, cfg.title);

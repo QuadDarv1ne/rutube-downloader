@@ -56,10 +56,11 @@ module.exports = {
 
 		process.title = "DOWNLOAD: " + cfg.title;
 
-		const [m3u8, quality] = await selectVideoQuality(
-			cfg,
-			videoInfo["playlists"]
-		);
+		const playlists = videoInfo["playlists"];
+		if (!playlists || !playlists.length) {
+			throw new Error("Не удалось получить список качеств видео: " + cfg.url);
+		}
+		const [m3u8, quality] = await selectVideoQuality(cfg, playlists);
 		const urlPrefix = hlsUrl.protocol + "//" + hlsUrl.host;
 		const segmentsUrl = urlPrefix + m3u8;
 		// Получаем плейлист с сегментами
@@ -67,6 +68,9 @@ module.exports = {
 			segmentsUrl,
 			"Не удалось получить сегменты:"
 		);
+		if (!segmentsInfo.segments || !segmentsInfo.segments.length) {
+			throw new Error("Не удалось получить список сегментов видео: " + cfg.url);
+		}
 		const segmentsUrls = segmentsInfo.segments.map(
 			segment => new URL(segment["uri"], segmentsUrl).href
 		);
