@@ -10,7 +10,7 @@ const { t } = require("./i18n");
 async function runDownload(url, outputDir, options = {}) {
 	const provider = selectVideoProvider(url);
 	if (!provider.mayUse(url)) {
-		throw new Error(t("error.specifyUrlAndFolder") + ": " + url);
+		throw new Error(t("error.noLoaderFound") + url);
 	}
 	const cfg = {
 		root: outputDir,

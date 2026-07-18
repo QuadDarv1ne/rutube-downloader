@@ -38,10 +38,16 @@ function createWindow() {
 
 app.whenReady().then(createWindow);
 app.on("window-all-closed", () => app.quit());
+app.on("activate", () => {
+	if (BrowserWindow.getAllWindows().length === 0) createWindow();
+});
 
 ipcMain.handle("get-locale", () => i18n.getLocale());
 ipcMain.handle("set-locale", (_, locale) => {
 	i18n.setLocale(locale);
+	if (mainWindow && !mainWindow.isDestroyed()) {
+		mainWindow.setTitle(i18n.t("app.title"));
+	}
 	return i18n.getLocale();
 });
 ipcMain.handle("get-available-locales", () => i18n.getAvailableLocales());

@@ -35,20 +35,28 @@ const btnConvert = document.getElementById("btnConvert");
 const langSelect = document.getElementById("langSelect");
 
 // --- i18n ---
-function t(key, fallback) {
+function tr(key, fallback) {
 	return window.api.t(key, fallback);
+}
+
+function applyConvertModeButton() {
+	const isAudio = convertMode.value === "audio";
+	btnConvert.textContent = isAudio
+		? tr("btn.extractAudio")
+		: tr("btn.convert");
 }
 
 async function applyTranslations() {
 	document.querySelectorAll("[data-i18n]").forEach(el => {
 		const key = el.getAttribute("data-i18n");
-		el.textContent = t(key);
+		el.textContent = tr(key);
 	});
 	document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
 		const key = el.getAttribute("data-i18n-placeholder");
-		el.placeholder = t(key);
+		el.placeholder = tr(key);
 	});
-	document.title = t("app.title");
+	document.title = tr("app.title");
+	applyConvertModeButton();
 }
 
 async function initLocale() {
@@ -78,8 +86,8 @@ function resetUI() {
 }
 
 function switchTab(activeTab) {
-	[tabOther, tabYoutube, tabConvert].forEach(t =>
-		t.classList.remove("active")
+	[tabOther, tabYoutube, tabConvert].forEach(tab =>
+		tab.classList.remove("active")
 	);
 	[panelOther, panelYoutube, panelConvert].forEach(p =>
 		p.classList.remove("active")
@@ -95,51 +103,44 @@ tabYoutube.addEventListener("click", () => switchTab(tabYoutube));
 tabConvert.addEventListener("click", () => switchTab(tabConvert));
 
 // Mode toggle: show/hide video vs audio format dropdown
-convertMode.addEventListener("change", () => {
-	const isAudio = convertMode.value === "audio";
-	convertFormat.style.display = isAudio ? "none" : "";
-	convertAudioFormat.style.display = isAudio ? "" : "none";
-	btnConvert.textContent = isAudio
-		? t("btn.extractAudio")
-		: t("btn.convert");
-});
+convertMode.addEventListener("change", applyConvertModeButton);
 
 btnFolder.addEventListener("click", async () => {
-	const path = await window.api.selectFolder();
-	if (path) dirEl.value = path;
+	const p = await window.api.selectFolder();
+	if (p) dirEl.value = p;
 });
 btnFolderYoutube.addEventListener("click", async () => {
-	const path = await window.api.selectFolder();
-	if (path) dirYoutube.value = path;
+	const p = await window.api.selectFolder();
+	if (p) dirYoutube.value = p;
 });
 btnConvertFolder.addEventListener("click", async () => {
-	const path = await window.api.selectFolder();
-	if (path) convertDir.value = path;
+	const p = await window.api.selectFolder();
+	if (p) convertDir.value = p;
 });
 btnConvertFile.addEventListener("click", async () => {
 	const file = await window.api.selectFile();
 	if (file) convertSrc.value = file;
 });
 
-const removeProgressListener = window.api.onDownloadProgress(data => {
+window.api.onDownloadProgress(data => {
 	if (data.stage === "segments" && data.total > 0) {
 		progressWrap.style.display = "block";
 		progressBar.style.width = (100 * data.current) / data.total + "%";
-		setStatus(t("status.segments") + data.current + " / " + data.total);
+		setStatus(tr("status.segments") + data.current + " / " + data.total);
 	} else if (data.stage === "download" && data.message) {
 		progressWrap.style.display = "block";
 		setStatus(data.message);
 	} else if (data.stage === "merge") {
-		setStatus(t("status.merging"));
+		setStatus(tr("status.merging"));
 	} else if (data.stage === "convert" && data.message) {
 		progressWrap.style.display = "block";
 		setStatus(data.message);
 	} else if (data.stage === "convert") {
-		setStatus(t("status.converting"));
+		setStatus(tr("status.converting"));
 	} else if (data.stage === "done" && data.filePath) {
 		progressWrap.style.display = "none";
 		progressBar.style.width = "0%";
-		setStatus(t("status.done") + "\n" + data.filePath, "success");
+		setStatus(tr("status.done") + "\n" + data.filePath, "success");
 	} else if (data.stage === "error" && data.message) {
 		progressWrap.style.display = "none";
 		progressBar.style.width = "0%";
@@ -149,11 +150,11 @@ const removeProgressListener = window.api.onDownloadProgress(data => {
 
 async function doDownload(url, dir, quality, format, audioFormat) {
 	if (!url) {
-		setStatus(t("validation.enterUrl"), "error");
+		setStatus(tr("validation.enterUrl"), "error");
 		return;
 	}
 	if (!dir) {
-		setStatus(t("validation.selectFolder"), "error");
+		setStatus(tr("validation.selectFolder"), "error");
 		return;
 	}
 	btnDownload.disabled = true;
@@ -161,7 +162,7 @@ async function doDownload(url, dir, quality, format, audioFormat) {
 	btnConvert.disabled = true;
 	progressWrap.style.display = "none";
 	progressBar.style.width = "0%";
-	setStatus(t("status.loading"));
+	setStatus(tr("status.loading"));
 	try {
 		const result = await window.api.download(
 			url,
@@ -171,7 +172,7 @@ async function doDownload(url, dir, quality, format, audioFormat) {
 			audioFormat
 		);
 		if (result.ok) {
-			setStatus(t("status.done") + "\n" + result.filePath, "success");
+			setStatus(tr("status.done") + "\n" + result.filePath, "success");
 		} else {
 			progressWrap.style.display = "none";
 			progressBar.style.width = "0%";
@@ -180,7 +181,7 @@ async function doDownload(url, dir, quality, format, audioFormat) {
 	} catch (e) {
 		progressWrap.style.display = "none";
 		progressBar.style.width = "0%";
-		setStatus(e.message || t("status.error"), "error");
+		setStatus(e.message || tr("status.error"), "error");
 	}
 	btnDownload.disabled = false;
 	btnDownloadYoutube.disabled = false;
@@ -189,11 +190,11 @@ async function doDownload(url, dir, quality, format, audioFormat) {
 
 async function doConvert(src, dir) {
 	if (!src) {
-		setStatus(t("validation.selectFile"), "error");
+		setStatus(tr("validation.selectFile"), "error");
 		return;
 	}
 	if (!dir) {
-		setStatus(t("validation.selectFolder"), "error");
+		setStatus(tr("validation.selectFolder"), "error");
 		return;
 	}
 	btnConvert.disabled = true;
@@ -203,13 +204,13 @@ async function doConvert(src, dir) {
 	progressBar.style.width = "0%";
 
 	const isAudio = convertMode.value === "audio";
-	setStatus(isAudio ? t("status.extractingAudio") : t("status.converting"));
+	setStatus(isAudio ? tr("status.extractingAudio") : tr("status.converting"));
 	try {
 		const result = isAudio
 			? await window.api.extractAudio(src, dir, convertAudioFormat.value)
 			: await window.api.convert(src, dir, convertFormat.value);
 		if (result.ok) {
-			setStatus(t("status.done") + "\n" + result.filePath, "success");
+			setStatus(tr("status.done") + "\n" + result.filePath, "success");
 		} else {
 			progressWrap.style.display = "none";
 			progressBar.style.width = "0%";
@@ -218,7 +219,7 @@ async function doConvert(src, dir) {
 	} catch (e) {
 		progressWrap.style.display = "none";
 		progressBar.style.width = "0%";
-		setStatus(e.message || t("status.error"), "error");
+		setStatus(e.message || tr("status.error"), "error");
 	}
 	btnConvert.disabled = false;
 	btnDownload.disabled = false;

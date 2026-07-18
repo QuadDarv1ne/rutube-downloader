@@ -95,6 +95,7 @@
   "cli.help.format": "输出文件格式: mp4, mkv, avi, mov, webm (默认 mp4)",
   "cli.help.audio": "提取音频格式: mp3, wav, flac (在视频下载后)",
   "cli.help.quality": "询问视频画质，默认选择最佳",
+  "cli.help.locale": "界面语言: ru, en, zh (默认 ru)",
   "cli.help.help": "显示此帮助信息",
   "cli.help.examples": "使用示例:",
   "cli.help.exampleRutube": "从 rutube 下载视频，文件名取自视频或参数",

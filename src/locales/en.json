@@ -95,6 +95,7 @@
   "cli.help.format": "output file format: mp4, mkv, avi, mov, webm (default mp4)",
   "cli.help.audio": "extract audio in format: mp3, wav, flac (after video download)",
   "cli.help.quality": "prompt for video quality, default selects best",
+  "cli.help.locale": "interface language: ru, en, zh (default ru)",
   "cli.help.help": "show this help",
   "cli.help.examples": "Examples:",
   "cli.help.exampleRutube": "download video from rutube, filename taken from the video or argument",

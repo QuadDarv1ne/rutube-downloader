@@ -38,7 +38,7 @@ process.on("uncaughtException", err => {
 	);
 });
 
-process.on("unhandledRejection", (reason, promise) => {
+process.on("unhandledRejection", (reason) => {
 	console.log("\u00A0");
 	const msg = reason instanceof Error ? reason.message : String(reason);
 	console.log(_colors.redBright(msg));
@@ -101,11 +101,11 @@ async function run() {
  * Запускаем
  */
 run()
-	.then(state => {
+	.then(() => {
 		console.log("\u00A0");
 		if (downFiles.length) {
 			console.log(
-				`Loaded files:`.padStart(configure.padEndText, " "),
+				(t("cli.done") + " (" + downFiles.length + ")").padStart(configure.padEndText, " "),
 				_colors.yellowBright(`${downFiles.length}`)
 			);
 			for (let file of downFiles)
@@ -116,7 +116,7 @@ run()
 		}
 		if (errorFiles.length) {
 			console.log(
-				`Failed files:`.padStart(configure.padEndText, " "),
+				(t("status.error") + " (" + errorFiles.length + ")").padStart(configure.padEndText, " "),
 				_colors.redBright(`${errorFiles.length}`)
 			);
 			for (let file of errorFiles)
