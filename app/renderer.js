@@ -56,6 +56,7 @@ async function applyTranslations() {
 		el.placeholder = tr(key);
 	});
 	document.title = tr("app.title");
+	document.documentElement.lang = localStorage.getItem("locale") || "ru";
 	applyConvertModeButton();
 }
 

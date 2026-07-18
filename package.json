@@ -1,6 +1,6 @@
 {
   "name": "rutube-downloader",
-  "description": "Скачивание видео с YouTube, RuTube, ВКонтакте, Одноклассники, Aser.pro",
+  "description": "Скачивание видео с YouTube, RuTube, ВКонтакте, Одноклассники, Aser.pro | Multi-language (RU/EN/ZH)",
   "version": "3.9.0",
   "license": "MIT",
   "main": "index.js",

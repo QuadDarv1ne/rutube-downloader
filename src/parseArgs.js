@@ -185,7 +185,7 @@ function tryMatchOption(state, option, value) {
 			const locale = value?.toLowerCase();
 			if (!locale || !getAvailableLocales().includes(locale))
 				throw new Error(
-					t("cli.error.unsupportedFormatCli") + " (ru, en, zh)"
+					t("cli.error.invalidLocale")
 				);
 			setLocale(locale);
 			return true;

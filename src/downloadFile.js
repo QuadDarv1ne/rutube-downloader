@@ -177,7 +177,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 	} catch (e) {
 		console.log(_colors.redBright(t("ffmpeg.error.launch") + e.message));
 		if (typeof cfg.onProgress === "function") {
-			cfg.onProgress({ stage: "error", message: "FFmpeg: " + e.message });
+			cfg.onProgress({ stage: "error", message: t("ffmpeg.error.launch") + e.message });
 		}
 		throw e;
 	}

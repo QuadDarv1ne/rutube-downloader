@@ -111,6 +111,7 @@
   "cli.error.unsupportedFormatCli": "不支持的格式。可用: mp4, mkv, avi, mov, webm",
   "cli.error.unsupportedAudioFormatCli": "不支持的音频格式。可用: mp3, wav, flac",
   "cli.error.unknownOption": "未知选项: ",
+  "cli.error.invalidLocale": "不支持的语言。可用: ru, en, zh",
   "cli.error.invalidQuality": "选择无效，已使用默认画质",
 
   "cli.quality.select": "请选择视频画质: ",

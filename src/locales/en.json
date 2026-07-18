@@ -111,6 +111,7 @@
   "cli.error.unsupportedFormatCli": "Unsupported format. Available: mp4, mkv, avi, mov, webm",
   "cli.error.unsupportedAudioFormatCli": "Unsupported audio format. Available: mp3, wav, flac",
   "cli.error.unknownOption": "Unknown option: ",
+  "cli.error.invalidLocale": "Unsupported language. Available: ru, en, zh",
   "cli.error.invalidQuality": "Invalid choice, default quality selected",
 
   "cli.quality.select": "Select quality for video: ",
