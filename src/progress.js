@@ -1,6 +1,7 @@
 const cliProgress = require("cli-progress");
 const _colors = require("ansi-colors");
 const { configure } = require("./configure");
+const { t } = require("./i18n");
 
 exports.getProgress = () =>
 	new cliProgress.SingleBar(
@@ -40,7 +41,7 @@ function formatBar(optionsBar, paramsBar, payloadBar) {
 
 	const payload = payloadBar.filename ? " " +
 		_colors.white("|") +
-		" Active files: " +
+		" " + t("progress.activeFiles") +
 		`${payloadBar.filename}` : "";
 
 	const barStr =

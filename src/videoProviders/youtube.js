@@ -3,6 +3,7 @@ const fs = require("node:fs/promises");
 const youtubedl = require("youtube-dl-exec");
 const { createDir } = require("../fsUtils");
 const { sanitizeTitle } = require("./titleUtils");
+const { t } = require("../i18n");
 
 const regex_youtube = /^https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]+/;
 
@@ -44,9 +45,9 @@ function attachProgressStream(stream, send) {
 		const lines = buf.split(/\r?\n/);
 		buf = lines.pop() || "";
 		for (const line of lines) {
-			const t = line.trim();
-			if (t && (t.includes("[download]") || t.includes("%") || /^\d+\.?\d*%/.test(t))) {
-				send(t);
+			const lineTrimmed = line.trim();
+			if (lineTrimmed && (lineTrimmed.includes("[download]") || lineTrimmed.includes("%") || /^\d+\.?\d*%/.test(lineTrimmed))) {
+				send(lineTrimmed);
 			}
 		}
 	});
@@ -67,9 +68,9 @@ module.exports = {
 		const send = msg => typeof cfg.onProgress === "function" && cfg.onProgress({ stage: "download", message: msg });
 
 		try {
-			send("Получение информации о видео...");
+			send(t("youtube.fetchingInfo"));
 			const slowHintTimer = setTimeout(() => {
-				send("Долго нет ответа. Скорее всего, нужен VPN — без него видео не скачается.");
+				send(t("youtube.slowHint"));
 			}, 30000);
 			let info;
 			try {
@@ -87,7 +88,7 @@ module.exports = {
 			cfg.video = path.join(cfg.video, title);
 			await createDir(cfg.video);
 
-			send("Загрузка...");
+			send(t("youtube.downloading"));
 			const qualityKey = QUALITY_FORMATS[cfg.quality] ? cfg.quality : "best";
 			const qualityOpts = QUALITY_FORMATS[qualityKey];
 			const outputTemplate = path.join(cfg.video, title + ".%(ext)s");
@@ -112,7 +113,7 @@ module.exports = {
 		} catch (e) {
 			const msg = e.message || String(e);
 			if (msg.includes("ENOENT") || msg.includes("spawn") || msg.includes("not found")) {
-				throw new Error("yt-dlp не найден. Выполните npm install заново (для загрузки бинарника нужен доступ в интернет).");
+				throw new Error(t("error.ytdlpNotFound"));
 			}
 			throw new Error("YouTube: " + (msg.length > 120 ? msg.slice(0, 120) + "…" : msg));
 		}
@@ -122,7 +123,7 @@ module.exports = {
 		const videoFiles = entries
 			.filter(e => e.isFile() && VIDEO_EXTENSIONS.has(path.extname(e.name).toLowerCase()))
 			.map(e => e.name);
-		if (videoFiles.length === 0) throw new Error("Не удалось сохранить видео");
+		if (videoFiles.length === 0) throw new Error(t("error.cannotSaveVideo"));
 		return [videoFiles[0], null];
 	},
 };

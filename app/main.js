@@ -3,6 +3,7 @@ const path = require("node:path");
 const { runDownload } = require("../src/runDownload");
 const { convertFile, extractAudio } = require("../src/convert");
 const { isValidFormat, isValidAudioFormat } = require("../src/formats");
+const i18n = require("../src/i18n");
 
 let mainWindow = null;
 let activeDownload = null;
@@ -11,10 +12,10 @@ let activeConvert = null;
 function createWindow() {
 	mainWindow = new BrowserWindow({
 		width: 560,
-		height: 560,
+		height: 600,
 		minWidth: 480,
 		minHeight: 440,
-		title: "Rutube Downloader",
+		title: i18n.t("app.title"),
 		webPreferences: {
 			preload: path.join(__dirname, "preload.js"),
 			contextIsolation: true,
@@ -38,55 +39,58 @@ function createWindow() {
 app.whenReady().then(createWindow);
 app.on("window-all-closed", () => app.quit());
 
-ipcMain.handle("select-folder", async () => {
+ipcMain.handle("get-locale", () => i18n.getLocale());
+ipcMain.handle("set-locale", (_, locale) => {
+	i18n.setLocale(locale);
+	return i18n.getLocale();
+});
+ipcMain.handle("get-available-locales", () => i18n.getAvailableLocales());
+
+ipcMain.on("t", (event, key, fallback) => {
+	event.returnValue = i18n.t(key, fallback);
+});
+
+ipcMain.handle("select-folder", async (_, title) => {
 	try {
 		const { canceled, filePaths } = await dialog.showOpenDialog(
 			mainWindow,
 			{
 				properties: ["openDirectory"],
-				title: "Выберите папку для сохранения",
+				title: title || i18n.t("dialog.selectFolder"),
 			}
 		);
 		if (canceled || !filePaths.length) return null;
 		return filePaths[0];
 	} catch (e) {
-		console.error("Ошибка диалога выбора папки:", e);
+		console.error(e);
 		return null;
 	}
 });
 
-ipcMain.handle("select-file", async () => {
+ipcMain.handle("select-file", async (_, title, filters) => {
 	try {
+		const videoFilters = [
+			{
+				name: i18n.t("dialog.filterVideo"),
+				extensions: [
+					"ts", "mp4", "mkv", "avi", "mov", "webm",
+					"flv", "mpg", "mpeg", "m4v", "3gp",
+				],
+			},
+			{ name: i18n.t("dialog.filterAll"), extensions: ["*"] },
+		];
 		const { canceled, filePaths } = await dialog.showOpenDialog(
 			mainWindow,
 			{
 				properties: ["openFile"],
-				title: "Выберите видео-файл",
-				filters: [
-					{
-						name: "Видео",
-						extensions: [
-							"ts",
-							"mp4",
-							"mkv",
-							"avi",
-							"mov",
-							"webm",
-							"flv",
-							"mpg",
-							"mpeg",
-							"m4v",
-							"3gp",
-						],
-					},
-					{ name: "Все файлы", extensions: ["*"] },
-				],
+				title: title || i18n.t("dialog.selectFile"),
+				filters: filters || videoFilters,
 			}
 		);
 		if (canceled || !filePaths.length) return null;
 		return filePaths[0];
 	} catch (e) {
-		console.error("Ошибка диалога выбора файла:", e);
+		console.error(e);
 		return null;
 	}
 });
@@ -94,21 +98,21 @@ ipcMain.handle("select-file", async () => {
 ipcMain.handle(
 	"download",
 	async (_, { url, dir, quality, format, audioFormat }) => {
-		if (!url || !dir) throw new Error("Укажите ссылку и папку");
+		if (!url || !dir) throw new Error(i18n.t("error.specifyUrlAndFolder"));
 		let parsedUrl;
 		try {
 			parsedUrl = new URL(url);
 		} catch {
-			throw new Error("Некорректная ссылка");
+			throw new Error(i18n.t("error.invalidUrl"));
 		}
 		if (!["http:", "https:"].includes(parsedUrl.protocol)) {
-			throw new Error("Поддерживаются только HTTP/HTTPS ссылки");
+			throw new Error(i18n.t("error.onlyHttp"));
 		}
 		if (format && !isValidFormat(format)) {
-			throw new Error("Неподдерживаемый формат: " + format);
+			throw new Error(i18n.t("error.unsupportedFormat") + format);
 		}
 		if (audioFormat && !isValidAudioFormat(audioFormat)) {
-			throw new Error("Неподдерживаемый аудио-формат: " + audioFormat);
+			throw new Error(i18n.t("error.unsupportedAudioFormat") + audioFormat);
 		}
 		const sendProgress = data => {
 			if (mainWindow && !mainWindow.isDestroyed()) {
@@ -117,7 +121,7 @@ ipcMain.handle(
 		};
 
 		if (activeDownload) {
-			throw new Error("Загрузка уже выполняется");
+			throw new Error(i18n.t("error.alreadyDownloading"));
 		}
 
 		const controller = new AbortController();
@@ -132,9 +136,7 @@ ipcMain.handle(
 			if (audioFormat) {
 				sendProgress({
 					stage: "convert",
-					message: `Извлечение аудио: ${path.basename(
-						filePath
-					)} → ${audioFormat.toUpperCase()}`,
+					message: i18n.t("cli.extractingAudio") + path.basename(filePath) + " \u2192 " + audioFormat.toUpperCase(),
 				});
 				const audioPath = await extractAudio(
 					filePath,
@@ -149,7 +151,7 @@ ipcMain.handle(
 			return { ok: true, filePath };
 		} catch (e) {
 			if (controller.signal.aborted) {
-				return { ok: false, error: "Загрузка отменена" };
+				return { ok: false, error: i18n.t("error.downloadCancelled") };
 			}
 			return { ok: false, error: e.message };
 		} finally {
@@ -159,12 +161,12 @@ ipcMain.handle(
 );
 
 ipcMain.handle("convert", async (_, { src, dir, format }) => {
-	if (!src || !dir) throw new Error("Укажите исходный файл и папку");
+	if (!src || !dir) throw new Error(i18n.t("error.specifySourceAndFolder"));
 	if (!isValidFormat(format)) {
-		throw new Error("Неподдерживаемый формат: " + format);
+		throw new Error(i18n.t("error.unsupportedFormat") + format);
 	}
 	if (activeConvert) {
-		throw new Error("Операция уже выполняется");
+		throw new Error(i18n.t("error.alreadyConverting"));
 	}
 	const sendProgress = data => {
 		if (mainWindow && !mainWindow.isDestroyed()) {
@@ -179,7 +181,7 @@ ipcMain.handle("convert", async (_, { src, dir, format }) => {
 		return { ok: true, filePath };
 	} catch (e) {
 		if (controller.signal.aborted) {
-			return { ok: false, error: "Операция отменена" };
+			return { ok: false, error: i18n.t("error.cancelled") };
 		}
 		return { ok: false, error: e.message };
 	} finally {
@@ -188,12 +190,12 @@ ipcMain.handle("convert", async (_, { src, dir, format }) => {
 });
 
 ipcMain.handle("extract-audio", async (_, { src, dir, format }) => {
-	if (!src || !dir) throw new Error("Укажите исходный файл и папку");
+	if (!src || !dir) throw new Error(i18n.t("error.specifySourceAndFolder"));
 	if (!isValidAudioFormat(format)) {
-		throw new Error("Неподдерживаемый аудио-формат: " + format);
+		throw new Error(i18n.t("error.unsupportedAudioFormat") + format);
 	}
 	if (activeConvert) {
-		throw new Error("Операция уже выполняется");
+		throw new Error(i18n.t("error.alreadyConverting"));
 	}
 	const sendProgress = data => {
 		if (mainWindow && !mainWindow.isDestroyed()) {
@@ -208,7 +210,7 @@ ipcMain.handle("extract-audio", async (_, { src, dir, format }) => {
 		return { ok: true, filePath };
 	} catch (e) {
 		if (controller.signal.aborted) {
-			return { ok: false, error: "Операция отменена" };
+			return { ok: false, error: i18n.t("error.cancelled") };
 		}
 		return { ok: false, error: e.message };
 	} finally {

@@ -2,6 +2,7 @@ const path = require("node:path");
 const { execFile } = require("node:child_process");
 const { getExt, getAudioExt } = require("./formats");
 const { getFFmpegPath, isHideBannerSupported } = require("./FFmpeg");
+const { t } = require("./i18n");
 
 const AUDIO_ARGS = {
 	mp3: ["-vn", "-codec:a", "libmp3lame", "-q:a", "2"],
@@ -27,7 +28,7 @@ exports.convertFile = function (src, destDir, format, onProgress) {
 		if (onProgress)
 			onProgress({
 				stage: "convert",
-				message: `Конвертация: ${path.basename(src)} → ${outName}`,
+				message: t("cli.converting") + " " + path.basename(src) + " \u2192 " + outName,
 			});
 
 		const child = execFile(ffmpeg, args);
@@ -36,7 +37,7 @@ exports.convertFile = function (src, destDir, format, onProgress) {
 			stderr += chunk;
 		});
 		child.on("error", err => {
-			reject(new Error("ffmpeg не удалось запустить: " + err.message));
+			reject(new Error(t("ffmpeg.error.launch") + err.message));
 		});
 		child.on("exit", code => {
 			if (code)
@@ -59,7 +60,7 @@ exports.extractAudio = function (src, destDir, format, onProgress) {
 
 	const audioArgs = AUDIO_ARGS[format];
 	if (!audioArgs) {
-		throw new Error("Неподдерживаемый аудио-формат: " + format);
+		throw new Error(t("error.unsupportedAudioFormat") + format);
 	}
 
 	const args = ["-y", "-i", src, ...audioArgs, outPath];
@@ -69,7 +70,7 @@ exports.extractAudio = function (src, destDir, format, onProgress) {
 		if (onProgress)
 			onProgress({
 				stage: "convert",
-				message: `Извлечение аудио: ${path.basename(src)} → ${outName}`,
+				message: t("cli.extractingAudio") + path.basename(src) + " \u2192 " + outName,
 			});
 
 		const child = execFile(ffmpeg, args);
@@ -78,7 +79,7 @@ exports.extractAudio = function (src, destDir, format, onProgress) {
 			stderr += chunk;
 		});
 		child.on("error", err => {
-			reject(new Error("ffmpeg не удалось запустить: " + err.message));
+			reject(new Error(t("ffmpeg.error.launch") + err.message));
 		});
 		child.on("exit", code => {
 			if (code)

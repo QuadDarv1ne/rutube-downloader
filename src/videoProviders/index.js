@@ -13,7 +13,7 @@ exports.selectVideoProvider = function (url) {
 	return {
 		mayUse: () => false,
 		loadVideo: function (cfg) {
-			throw new Error("Не найден загрузчик для: " + cfg.url);
+			throw new Error(require("../i18n").t("error.noLoaderFound") + cfg.url);
 		},
 	};
 };

@@ -15,6 +15,7 @@ const { configure } = require("./src/configure");
 const { closeRL } = require("./src/dialogue");
 const { parseArgs } = require("./src/parseArgs");
 const { extractAudio } = require("./src/convert");
+const { t } = require("./src/i18n");
 const downFiles = [];
 const errorFiles = [];
 /**
@@ -33,7 +34,7 @@ process.stdout.write("\033c");
 process.on("uncaughtException", err => {
 	console.log("\u00A0");
 	console.log(
-		_colors.redBright("Критическая ошибка: " + (err.message || err))
+		_colors.redBright((err.message || err))
 	);
 });
 
@@ -71,14 +72,14 @@ async function run() {
 			if (state.audioFormat) {
 				const videoPath = path.join(cfg.video, name);
 				console.log(
-					`EXTRACTING AUDIO:`.padStart(configure.padText, " "),
+					t("cli.extractingAudio").padStart(configure.padText, " "),
 					_colors.yellowBright(
-						`${name} → ${state.audioFormat.toUpperCase()}`
+						`${name} \u2192 ${state.audioFormat.toUpperCase()}`
 					)
 				);
 				await extractAudio(videoPath, cfg.video, state.audioFormat);
 				console.log(
-					`AUDIO EXTRACTED:`.padStart(configure.padText, " "),
+					t("cli.audioExtracted").padStart(configure.padText, " "),
 					_colors.yellowBright(
 						`${path.basename(name, path.extname(name))}.${
 							state.audioFormat
@@ -104,7 +105,7 @@ run()
 		console.log("\u00A0");
 		if (downFiles.length) {
 			console.log(
-				`Загружено файлов:`.padStart(configure.padEndText, " "),
+				`Loaded files:`.padStart(configure.padEndText, " "),
 				_colors.yellowBright(`${downFiles.length}`)
 			);
 			for (let file of downFiles)
@@ -115,7 +116,7 @@ run()
 		}
 		if (errorFiles.length) {
 			console.log(
-				`Незагруженные файлы:`.padStart(configure.padEndText, " "),
+				`Failed files:`.padStart(configure.padEndText, " "),
 				_colors.redBright(`${errorFiles.length}`)
 			);
 			for (let file of errorFiles)

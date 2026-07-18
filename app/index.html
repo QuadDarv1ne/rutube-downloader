@@ -7,7 +7,7 @@
 			http-equiv="Content-Security-Policy"
 			content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'"
 		/>
-		<title>Rutube Downloader — RuTube, VK, OK, Aser.pro</title>
+		<title data-i18n="app.title">Rutube Downloader — RuTube, VK, OK, Aser.pro</title>
 		<style>
 			* {
 				box-sizing: border-box;
@@ -160,39 +160,76 @@
 			.panel.active {
 				display: block;
 			}
+			.header-row {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 16px;
+			}
+			.header-row h1 {
+				margin: 0;
+			}
+			.lang-selector {
+				display: flex;
+				align-items: center;
+				gap: 6px;
+			}
+			.lang-selector label {
+				margin: 0;
+				font-size: 0.8rem;
+				color: #888;
+			}
+			.lang-selector select {
+				padding: 4px 8px;
+				font-size: 12px;
+				min-width: auto;
+				margin-bottom: 0;
+			}
 		</style>
 	</head>
 	<body>
-		<h1>Rutube Downloader</h1>
+		<div class="header-row">
+			<h1 data-i18n="app.heading">Rutube Downloader</h1>
+			<div class="lang-selector">
+				<label data-i18n="menu.language">Язык</label>
+				<select id="langSelect">
+					<option value="ru">Русский</option>
+					<option value="en">English</option>
+					<option value="zh">中文</option>
+				</select>
+			</div>
+		</div>
 		<div class="tabs">
-			<button type="button" id="tabOther" class="active">
+			<button type="button" id="tabOther" class="active" data-i18n="tab.other">
 				RuTube, VK, OK, Aser
 			</button>
-			<button type="button" id="tabYoutube">YouTube</button>
-			<button type="button" id="tabConvert">Конвертировать</button>
+			<button type="button" id="tabYoutube" data-i18n="tab.youtube">YouTube</button>
+			<button type="button" id="tabConvert" data-i18n="tab.convert">Конвертировать</button>
 		</div>
 
 		<!-- RuTube, VK, OK, Aser -->
 		<div id="panelOther" class="panel active">
-			<label>Ссылка на видео</label>
+			<label data-i18n="label.videoUrl">Ссылка на видео</label>
 			<input
 				type="text"
 				id="urlOther"
+				data-i18n-placeholder="placeholder.urlOther"
 				placeholder="rutube.ru, vkvideo.ru, ok.ru, aser.pro"
 			/>
-			<label>Папка сохранения</label>
+			<label data-i18n="label.saveFolder">Папка сохранения</label>
 			<div class="row">
 				<input
 					type="text"
 					id="dir"
+					data-i18n-placeholder="placeholder.selectFolder"
 					placeholder="Выберите папку"
 					readonly
 				/>
-				<button type="button" id="btnFolder">Папка</button>
+				<button type="button" id="btnFolder" data-i18n="btn.folder">Папка</button>
 			</div>
 			<div class="row-select">
 				<div>
-					<label>Формат видео</label>
+					<label data-i18n="label.videoFormat">Формат видео</label>
 					<select id="formatOther">
 						<option value="mp4">MP4</option>
 						<option value="mkv">MKV</option>
@@ -202,52 +239,54 @@
 					</select>
 				</div>
 				<div>
-					<label>Извлечь аудио</label>
+					<label data-i18n="label.extractAudio">Извлечь аудио</label>
 					<select id="audioFormatOther">
-						<option value="">Нет</option>
+						<option value="" data-i18n="audioFormat.none">Нет</option>
 						<option value="mp3">MP3</option>
 						<option value="wav">WAV</option>
 						<option value="flac">FLAC</option>
 					</select>
 				</div>
 			</div>
-			<button type="button" id="btnDownload" class="primary">
+			<button type="button" id="btnDownload" class="primary" data-i18n="btn.download">
 				Скачать
 			</button>
 		</div>
 
 		<!-- YouTube -->
 		<div id="panelYoutube" class="panel">
-			<label>Ссылка на видео YouTube</label>
+			<label data-i18n="label.youtubeUrl">Ссылка на видео YouTube</label>
 			<input
 				type="text"
 				id="urlYoutube"
+				data-i18n-placeholder="placeholder.urlYoutube"
 				placeholder="youtube.com, youtu.be"
 			/>
-			<label>Папка сохранения</label>
+			<label data-i18n="label.saveFolder">Папка сохранения</label>
 			<div class="row">
 				<input
 					type="text"
 					id="dirYoutube"
+					data-i18n-placeholder="placeholder.selectFolder"
 					placeholder="Выберите папку"
 					readonly
 				/>
-				<button type="button" id="btnFolderYoutube">Папка</button>
+				<button type="button" id="btnFolderYoutube" data-i18n="btn.folder">Папка</button>
 			</div>
 			<div id="qualityRow">
-				<label for="quality" style="margin-bottom: 0">Качество:</label>
+				<label for="quality" style="margin-bottom: 0" data-i18n="label.quality">Качество:</label>
 				<select id="quality">
-					<option value="best">Лучшее (MP4)</option>
+					<option value="best" data-i18n="quality.best">Лучшее (MP4)</option>
 					<option value="1080">1080p</option>
 					<option value="720">720p</option>
 					<option value="480">480p</option>
 					<option value="360">360p</option>
-					<option value="audio">Только аудио</option>
+					<option value="audio" data-i18n="quality.audio">Только аудио</option>
 				</select>
 			</div>
 			<div class="row-select">
 				<div>
-					<label>Формат видео</label>
+					<label data-i18n="label.videoFormat">Формат видео</label>
 					<select id="formatYoutube">
 						<option value="mp4">MP4</option>
 						<option value="mkv">MKV</option>
@@ -255,52 +294,54 @@
 					</select>
 				</div>
 				<div>
-					<label>Извлечь аудио</label>
+					<label data-i18n="label.extractAudio">Извлечь аудио</label>
 					<select id="audioFormatYoutube">
-						<option value="">Нет</option>
+						<option value="" data-i18n="audioFormat.none">Нет</option>
 						<option value="mp3">MP3</option>
 						<option value="wav">WAV</option>
 						<option value="flac">FLAC</option>
 					</select>
 				</div>
 			</div>
-			<button type="button" id="btnDownloadYoutube" class="primary">
+			<button type="button" id="btnDownloadYoutube" class="primary" data-i18n="btn.download">
 				Скачать
 			</button>
 		</div>
 
 		<!-- Конвертировать -->
 		<div id="panelConvert" class="panel">
-			<label>Исходный файл</label>
+			<label data-i18n="label.sourceFile">Исходный файл</label>
 			<div class="row">
 				<input
 					type="text"
 					id="convertSrc"
+					data-i18n-placeholder="placeholder.selectFile"
 					placeholder="Выберите видео-файл"
 					readonly
 				/>
-				<button type="button" id="btnConvertFile">Файл</button>
+				<button type="button" id="btnConvertFile" data-i18n="btn.file">Файл</button>
 			</div>
-			<label>Папка сохранения</label>
+			<label data-i18n="label.saveFolder">Папка сохранения</label>
 			<div class="row">
 				<input
 					type="text"
 					id="convertDir"
+					data-i18n-placeholder="placeholder.selectFolder"
 					placeholder="Выберите папку"
 					readonly
 				/>
-				<button type="button" id="btnConvertFolder">Папка</button>
+				<button type="button" id="btnConvertFolder" data-i18n="btn.folder">Папка</button>
 			</div>
 			<div class="row-select">
 				<div>
-					<label>Режим</label>
+					<label data-i18n="label.mode">Режим</label>
 					<select id="convertMode">
-						<option value="video">Конвертировать видео</option>
-						<option value="audio">Извлечь аудио</option>
+						<option value="video" data-i18n="convertMode.video">Конвертировать видео</option>
+						<option value="audio" data-i18n="convertMode.audio">Извлечь аудио</option>
 					</select>
 				</div>
 				<div>
-					<label>Формат</label>
+					<label data-i18n="label.format">Формат</label>
 					<select id="convertFormat">
 						<option value="mp4">MP4</option>
 						<option value="mkv">MKV</option>
@@ -315,7 +356,7 @@
 					</select>
 				</div>
 			</div>
-			<button type="button" id="btnConvert" class="primary">
+			<button type="button" id="btnConvert" class="primary" data-i18n="btn.convert">
 				Конвертировать
 			</button>
 		</div>

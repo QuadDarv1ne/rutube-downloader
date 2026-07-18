@@ -1,5 +1,6 @@
 const { execFile, execFileSync } = require("node:child_process");
 const path = require("node:path");
+const { t } = require("./i18n");
 
 let ffmpegPath;
 let hideBannerSupported;
@@ -51,7 +52,7 @@ exports.execFFmpeg = async (input, output, options = {}) => {
 		let stderr = "";
 		child.stderr.on("data", chunk => { stderr += chunk; });
 		child.on("error", err => {
-			reject(new Error("ffmpeg не удалось запустить: " + err.message));
+			reject(new Error(t("ffmpeg.error.launch") + err.message));
 		});
 		child.on("exit", code => {
 			if (code) reject(new Error("ffmpeg error (code " + code + "): " + stderr.trim()));

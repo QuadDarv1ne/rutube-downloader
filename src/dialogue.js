@@ -1,6 +1,7 @@
 const readline = require("readline");
 const _colors = require("ansi-colors");
 const { configure } = require("./configure");
+const { t } = require("./i18n");
 
 const findMaxIndex = function (arr) {
 	let max = arr[0],
@@ -83,7 +84,7 @@ module.exports = {
 		}
 		console.log(`\u00A0`);
 		console.log(
-			`Выберите качество для видео: `.padStart(configure.padText) +
+			t("cli.quality.select").padStart(configure.padText) +
 				_colors.yellowBright(`${cfg.title}`)
 		);
 		console.log(`\u00A0`);
@@ -100,7 +101,7 @@ module.exports = {
 				) {
 					console.log(
 						_colors.redBright(
-							"Неверный выбор, выбрано качество по умолчанию"
+							t("cli.error.invalidQuality")
 						)
 					);
 					const ind = findMaxIndex(widthList);
@@ -116,7 +117,7 @@ module.exports = {
 					return;
 				}
 				console.log(`\u00A0`);
-				console.log(`Выбран вариант:`.padStart(configure.padText));
+				console.log(t("cli.quality.selected").padStart(configure.padText));
 				console.log(qualitiesOptions[index]);
 				arrays = [
 					playlists[index]["uri"],

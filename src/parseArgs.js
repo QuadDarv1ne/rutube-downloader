@@ -3,6 +3,7 @@ const { configure } = require("./configure");
 const { selectVideoProvider } = require("./videoProviders");
 const { isValidFormat, isValidAudioFormat } = require("./formats");
 const _colors = require("ansi-colors");
+const { t } = require("./i18n");
 
 exports.parseArgs = args => {
 	const root = path.dirname(args[1]);
@@ -30,7 +31,7 @@ exports.parseArgs = args => {
 				const consumed = tryMatchOption(state, argument, args[i + 1]);
 				if (consumed) i++;
 			} catch (e) {
-				console.log(_colors.redBright("Ошибка: " + e.message));
+				console.log(_colors.redBright(t("cli.help.usage", "Error") + ": " + e.message));
 			}
 		} else {
 			try {
@@ -39,7 +40,7 @@ exports.parseArgs = args => {
 					videoProvider: selectVideoProvider(argument),
 				});
 			} catch (e) {
-				console.log(_colors.redBright("Ошибка: " + e.message));
+				console.log(_colors.redBright(t("cli.help.usage", "Error") + ": " + e.message));
 			}
 		}
 	}
@@ -49,66 +50,66 @@ exports.parseArgs = args => {
 
 const help = [
 	" ",
-	"Использовать:",
+	t("cli.help.usage"),
 	_colors.yellowBright(
 		"node index.js url1 [url2] [url3 -t custom_title] [url4] [...] [-p 10] [-q] [-f mp4] [-a mp3]"
 	),
 	"",
-	"Опции:",
+	t("cli.help.options"),
 	" " +
 		_colors.yellowBright("-t <title>") +
-		" \t задать имя файла для предыдущего url",
+		" \t " + t("cli.help.setTitle"),
 	" " +
 		_colors.yellowBright("-p <int>") +
-		" \t количество одновременных загрузок, по умолчанию 5",
+		" \t " + t("cli.help.parallel"),
 	" " +
 		_colors.yellowBright("-f <format>") +
-		" \t формат выходного файла: mp4, mkv, avi, mov, webm (по умолчанию mp4)",
+		" \t " + t("cli.help.format"),
 	" " +
 		_colors.yellowBright("-a <format>") +
-		" \t извлечь аудио в формате: mp3, wav, flac (после загрузки видео)",
+		" \t " + t("cli.help.audio"),
 	" " +
 		_colors.yellowBright("-q") +
-		" \t\t скрипт будет спрашивать о том, какого качества видео загружать, по умолчанию выбирает наилучшее",
-	" " + _colors.yellowBright("-h") + " \t\t отобразить справку",
+		" \t\t " + t("cli.help.quality"),
+	" " + _colors.yellowBright("-h") + " \t\t " + t("cli.help.help"),
 	" ",
-	"Примеры использования:",
+	t("cli.help.examples"),
 	"",
-	" + загрузить видео с rutube, имя файла будет взято как у видео по ссылке, либо из аргумента",
+	" + " + t("cli.help.exampleRutube"),
 	_colors.yellowBright(
 		"node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/"
 	),
 	"",
-	" + загрузить видео с vkvideo, имя файла будет взято как у видео по ссылке, либо из аргумента",
+	" + " + t("cli.help.exampleVk"),
 	_colors.yellowBright(
 		"node index.js https://vkvideo.ru/video-18255722_456244249"
 	),
 	"",
-	" + загрузить видео с aser.pro, имя файла будет взято из аргумента",
+	" + " + t("cli.help.exampleAser"),
 	_colors.yellowBright(
 		'node index.js https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8 -t "Поднятие уровня в одиночку серия 01"'
 	),
 	"",
-	" + загрузить несколько файлов",
+	" + " + t("cli.help.exampleMultiple"),
 	_colors.yellowBright(
 		'node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ -t "Отмеченный богом"' +
 			' https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8 -t "Поднятие уровня в одиночку серия 01"' +
 			' https://vkvideo.ru/video-18255722_456244249 -t "Скачено с VK"'
 	),
 	"",
-	" + либо загрузить несколько файлов без параметров",
+	" + " + t("cli.help.exampleMultipleNoArgs"),
 	_colors.yellowBright(
 		"node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/" +
 			" https://aser.pro/content/stream/podnyatie_urovnya_v_odinochku/001_29006/hls/index.m3u8" +
 			" https://vkvideo.ru/video-18255722_456244249"
 	),
 	"",
-	" + загрузить видео и извлечь аудио в MP3",
+	" + " + t("cli.help.exampleAudioMp3"),
 	_colors.yellowBright(
 		"node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ -a mp3"
 	),
 	"",
-	" + загрузить видео и извлечь аудио в FLAC",
+	" + " + t("cli.help.exampleAudioFlac"),
 	_colors.yellowBright(
 		"node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ -a flac"
 	),
@@ -125,7 +126,7 @@ function tryMatchOption(state, option, value) {
 			const file = state.files[state.files.length - 1];
 			if (!file)
 				throw new Error(
-					"Опция -t, может быть использована только после url"
+					t("cli.error.optionAfterUrl")
 				);
 			file.title = value;
 			return true;
@@ -138,7 +139,7 @@ function tryMatchOption(state, option, value) {
 				state.parallelSegments < 1
 			)
 				throw new Error(
-					"Количество одновременных загрузок должно быть числом больше 0"
+					t("cli.error.invalidParallelCount")
 				);
 			return true;
 		}
@@ -151,9 +152,7 @@ function tryMatchOption(state, option, value) {
 			const fmt = value?.toLowerCase();
 			if (!fmt || !isValidFormat(fmt))
 				throw new Error(
-					"Неподдерживаемый формат: " +
-						(value || "") +
-						". Доступны: mp4, mkv, avi, mov, webm"
+					t("cli.error.unsupportedFormatCli")
 				);
 			state.format = fmt;
 			return true;
@@ -163,9 +162,7 @@ function tryMatchOption(state, option, value) {
 			const afmt = value?.toLowerCase();
 			if (!afmt || !isValidAudioFormat(afmt))
 				throw new Error(
-					"Неподдерживаемый аудио-формат: " +
-						(value || "") +
-						". Доступны: mp3, wav, flac"
+					t("cli.error.unsupportedAudioFormatCli")
 				);
 			state.audioFormat = afmt;
 			return true;
@@ -176,6 +173,6 @@ function tryMatchOption(state, option, value) {
 			return process.exit(0);
 
 		default:
-			throw new Error("Введена неизвестная опция: " + option);
+			throw new Error(t("cli.error.unknownOption") + option);
 	}
 }

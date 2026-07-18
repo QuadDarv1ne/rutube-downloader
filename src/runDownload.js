@@ -1,6 +1,7 @@
 const path = require("node:path");
 const { configure } = require("./configure");
 const { selectVideoProvider } = require("./videoProviders");
+const { t } = require("./i18n");
 
 /**
  * Запуск загрузки без интерактивного диалога (для UI).
@@ -9,7 +10,7 @@ const { selectVideoProvider } = require("./videoProviders");
 async function runDownload(url, outputDir, options = {}) {
 	const provider = selectVideoProvider(url);
 	if (!provider.mayUse(url)) {
-		throw new Error("Не найден загрузчик для: " + url);
+		throw new Error(t("error.specifyUrlAndFolder") + ": " + url);
 	}
 	const cfg = {
 		root: outputDir,
@@ -24,7 +25,6 @@ async function runDownload(url, outputDir, options = {}) {
 		signal: options.signal,
 	};
 	const [name] = await provider.loadVideo(cfg);
-	// После loadVideo провайдер мог изменить cfg.video (например, на outputDir/title)
 	const videoDir = cfg.video;
 	return path.join(videoDir, name);
 }

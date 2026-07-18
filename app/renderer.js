@@ -31,6 +31,41 @@ const btnConvertFile = document.getElementById("btnConvertFile");
 const btnConvertFolder = document.getElementById("btnConvertFolder");
 const btnConvert = document.getElementById("btnConvert");
 
+// Language selector
+const langSelect = document.getElementById("langSelect");
+
+// --- i18n ---
+function t(key, fallback) {
+	return window.api.t(key, fallback);
+}
+
+async function applyTranslations() {
+	document.querySelectorAll("[data-i18n]").forEach(el => {
+		const key = el.getAttribute("data-i18n");
+		el.textContent = t(key);
+	});
+	document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+		const key = el.getAttribute("data-i18n-placeholder");
+		el.placeholder = t(key);
+	});
+	document.title = t("app.title");
+}
+
+async function initLocale() {
+	const saved = localStorage.getItem("locale") || "ru";
+	langSelect.value = saved;
+	await window.api.setLocale(saved);
+	await applyTranslations();
+}
+
+langSelect.addEventListener("change", async () => {
+	const locale = langSelect.value;
+	localStorage.setItem("locale", locale);
+	await window.api.setLocale(locale);
+	await applyTranslations();
+});
+
+// --- UI helpers ---
 function setStatus(text, type = "") {
 	statusEl.textContent = text;
 	statusEl.className = type;
@@ -64,7 +99,9 @@ convertMode.addEventListener("change", () => {
 	const isAudio = convertMode.value === "audio";
 	convertFormat.style.display = isAudio ? "none" : "";
 	convertAudioFormat.style.display = isAudio ? "" : "none";
-	btnConvert.textContent = isAudio ? "Извлечь аудио" : "Конвертировать";
+	btnConvert.textContent = isAudio
+		? t("btn.extractAudio")
+		: t("btn.convert");
 });
 
 btnFolder.addEventListener("click", async () => {
@@ -88,21 +125,21 @@ const removeProgressListener = window.api.onDownloadProgress(data => {
 	if (data.stage === "segments" && data.total > 0) {
 		progressWrap.style.display = "block";
 		progressBar.style.width = (100 * data.current) / data.total + "%";
-		setStatus("Сегменты: " + data.current + " / " + data.total);
+		setStatus(t("status.segments") + data.current + " / " + data.total);
 	} else if (data.stage === "download" && data.message) {
 		progressWrap.style.display = "block";
 		setStatus(data.message);
 	} else if (data.stage === "merge") {
-		setStatus("Объединение файлов...");
+		setStatus(t("status.merging"));
 	} else if (data.stage === "convert" && data.message) {
 		progressWrap.style.display = "block";
 		setStatus(data.message);
 	} else if (data.stage === "convert") {
-		setStatus("Конвертация...");
+		setStatus(t("status.converting"));
 	} else if (data.stage === "done" && data.filePath) {
 		progressWrap.style.display = "none";
 		progressBar.style.width = "0%";
-		setStatus("Готово!\n" + data.filePath, "success");
+		setStatus(t("status.done") + "\n" + data.filePath, "success");
 	} else if (data.stage === "error" && data.message) {
 		progressWrap.style.display = "none";
 		progressBar.style.width = "0%";
@@ -112,11 +149,11 @@ const removeProgressListener = window.api.onDownloadProgress(data => {
 
 async function doDownload(url, dir, quality, format, audioFormat) {
 	if (!url) {
-		setStatus("Введите ссылку на видео", "error");
+		setStatus(t("validation.enterUrl"), "error");
 		return;
 	}
 	if (!dir) {
-		setStatus("Выберите папку для сохранения", "error");
+		setStatus(t("validation.selectFolder"), "error");
 		return;
 	}
 	btnDownload.disabled = true;
@@ -124,7 +161,7 @@ async function doDownload(url, dir, quality, format, audioFormat) {
 	btnConvert.disabled = true;
 	progressWrap.style.display = "none";
 	progressBar.style.width = "0%";
-	setStatus("Загрузка...");
+	setStatus(t("status.loading"));
 	try {
 		const result = await window.api.download(
 			url,
@@ -134,7 +171,7 @@ async function doDownload(url, dir, quality, format, audioFormat) {
 			audioFormat
 		);
 		if (result.ok) {
-			setStatus("Готово!\n" + result.filePath, "success");
+			setStatus(t("status.done") + "\n" + result.filePath, "success");
 		} else {
 			progressWrap.style.display = "none";
 			progressBar.style.width = "0%";
@@ -143,7 +180,7 @@ async function doDownload(url, dir, quality, format, audioFormat) {
 	} catch (e) {
 		progressWrap.style.display = "none";
 		progressBar.style.width = "0%";
-		setStatus(e.message || "Ошибка", "error");
+		setStatus(e.message || t("status.error"), "error");
 	}
 	btnDownload.disabled = false;
 	btnDownloadYoutube.disabled = false;
@@ -152,11 +189,11 @@ async function doDownload(url, dir, quality, format, audioFormat) {
 
 async function doConvert(src, dir) {
 	if (!src) {
-		setStatus("Выберите исходный файл", "error");
+		setStatus(t("validation.selectFile"), "error");
 		return;
 	}
 	if (!dir) {
-		setStatus("Выберите папку для сохранения", "error");
+		setStatus(t("validation.selectFolder"), "error");
 		return;
 	}
 	btnConvert.disabled = true;
@@ -166,13 +203,13 @@ async function doConvert(src, dir) {
 	progressBar.style.width = "0%";
 
 	const isAudio = convertMode.value === "audio";
-	setStatus(isAudio ? "Извлечение аудио..." : "Конвертация...");
+	setStatus(isAudio ? t("status.extractingAudio") : t("status.converting"));
 	try {
 		const result = isAudio
 			? await window.api.extractAudio(src, dir, convertAudioFormat.value)
 			: await window.api.convert(src, dir, convertFormat.value);
 		if (result.ok) {
-			setStatus("Готово!\n" + result.filePath, "success");
+			setStatus(t("status.done") + "\n" + result.filePath, "success");
 		} else {
 			progressWrap.style.display = "none";
 			progressBar.style.width = "0%";
@@ -181,7 +218,7 @@ async function doConvert(src, dir) {
 	} catch (e) {
 		progressWrap.style.display = "none";
 		progressBar.style.width = "0%";
-		setStatus(e.message || "Ошибка", "error");
+		setStatus(e.message || t("status.error"), "error");
 	}
 	btnConvert.disabled = false;
 	btnDownload.disabled = false;
@@ -209,3 +246,6 @@ btnDownloadYoutube.addEventListener("click", () => {
 btnConvert.addEventListener("click", () => {
 	doConvert(convertSrc.value.trim(), convertDir.value.trim());
 });
+
+// Initialize locale on startup
+initLocale();

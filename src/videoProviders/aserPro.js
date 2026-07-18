@@ -3,6 +3,7 @@ const { downloadFile } = require("../downloadFile");
 const { selectVideoQuality } = require("../dialogue");
 const { getManifest } = require("../m3u8Utils");
 const { sanitizeTitle } = require("./titleUtils");
+const { t } = require("../i18n");
 
 const regexAserPro = /^https?:\/\/aser\.pro\/content\/.+?\/hls\/index.m3u8$/;
 
@@ -12,23 +13,23 @@ module.exports = {
 	loadVideo: async function (cfg) {
 		const videoInfo = await getManifest(
 			cfg.url,
-			"Не удалось получить видео:"
+			t("error.cannotGetVideo")
 		);
 		cfg.title = sanitizeTitle(cfg.title);
 		const playlists = videoInfo["playlists"];
 		if (!playlists || !playlists.length) {
-			throw new Error("Не удалось получить список качеств видео: " + cfg.url);
+			throw new Error(t("error.cannotGetVideoQualities") + cfg.url);
 		}
 		const [playlist, quality] = await selectVideoQuality(cfg, playlists);
 
 		const segmentsUrl = new URL(playlist, cfg.url).href;
 		const segmentsInfo = await getManifest(
 			segmentsUrl,
-			"Не удалось получить сегменты:"
+			t("error.cannotGetSegments")
 		);
 
 		if (!segmentsInfo.segments || !segmentsInfo.segments.length) {
-			throw new Error("Не удалось получить список сегментов видео: " + cfg.url);
+			throw new Error(t("error.cannotGetSegmentList") + cfg.url);
 		}
 		const segmentsUrls = segmentsInfo.segments.map(segment =>
 			new URL(segment["uri"], segmentsUrl).href

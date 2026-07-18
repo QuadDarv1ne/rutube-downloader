@@ -1,8 +1,8 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("api", {
-	selectFolder: () => ipcRenderer.invoke("select-folder"),
-	selectFile: () => ipcRenderer.invoke("select-file"),
+	selectFolder: (title) => ipcRenderer.invoke("select-folder", title),
+	selectFile: (title, filters) => ipcRenderer.invoke("select-file", title, filters),
 	download: (url, dir, quality, format, audioFormat) =>
 		ipcRenderer.invoke("download", {
 			url,
@@ -20,4 +20,8 @@ contextBridge.exposeInMainWorld("api", {
 		ipcRenderer.on("download-progress", handler);
 		return () => ipcRenderer.removeListener("download-progress", handler);
 	},
+	getLocale: () => ipcRenderer.invoke("get-locale"),
+	setLocale: (locale) => ipcRenderer.invoke("set-locale", locale),
+	getAvailableLocales: () => ipcRenderer.invoke("get-available-locales"),
+	t: (key, fallback) => ipcRenderer.sendSync("t", key, fallback),
 });

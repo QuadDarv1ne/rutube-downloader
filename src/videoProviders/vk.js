@@ -5,21 +5,22 @@ const { selectVideoQuality } = require("../dialogue");
 const { downloadFile } = require("../downloadFile");
 const { sanitizeTitle } = require("./titleUtils");
 const { fetchWithTimeout } = require("./fetchTimeout");
+const { t } = require("../i18n");
 
 /**
  * Видео от пользователя
  * https://vk.com/video643853031_456271286
  * https://vk.ru/video643853031_456271286
  * https://vkvideo.ru/video643853031_456271286
- * 
+ *
  * Видео от канала
  * https://vk.com/video-18255722_456244249
  * https://vk.ru/video-18255722_456244249
  * https://vkvideo.ru/video-18255722_456244249
- * 
+ *
  * Поддержка ссылки с плейлиста. Пример:
  * https://vkvideo.ru/playlist/62764098_2/video62764098_456239055
- * 
+ *
  */
 const regexVk = /^https?:\/\/(?:vk|vkvideo)\.(?:ru|com)\/(?:playlist\/.+)?video(-?\d+_\d+)/;
 
@@ -62,7 +63,7 @@ module.exports = {
 			});
 
 			if (getUrlResp.status >= 400) {
-				throw new Error(`Не удалось загрузить страницу видео: ${cfg.url}\r\n\r\n${getUrlResp.status} ${getUrlResp.statusText}`);
+				throw new Error(t("error.cannotLoadVideoPage") + cfg.url + "\r\n\r\n" + getUrlResp.status + " " + getUrlResp.statusText);
 			}
 
 			const cookies = extractCookies(
@@ -72,7 +73,7 @@ module.exports = {
 			);
 
 			const location1 = getUrlResp.headers.get("location");
-			if (!location1) throw new Error(`Не удалось получить перенаправление: ${cfg.url}`);
+			if (!location1) throw new Error(t("error.cannotGetRedirect") + cfg.url);
 			const autoLoginResp = await fetchWithTimeout(location1, {
 				redirect: "manual",
 				headers: browserHeaders,
@@ -84,7 +85,7 @@ module.exports = {
 			);
 
 			const location2 = autoLoginResp.headers.get("location");
-			if (!location2) throw new Error(`Не удалось получить перенаправление (шаг 2): ${cfg.url}`);
+			if (!location2) throw new Error(t("error.cannotGetRedirectStep2") + cfg.url);
 			const anonymousLogin = await fetchWithTimeout(
 				location2,
 				{
@@ -102,7 +103,7 @@ module.exports = {
 			);
 
 			const location3 = anonymousLogin.headers.get("location");
-			if (!location3) throw new Error(`Не удалось получить перенаправление (шаг 3): ${cfg.url}`);
+			if (!location3) throw new Error(t("error.cannotGetRedirectStep3") + cfg.url);
 			const getPage = await fetchWithTimeout(location3, {
 				redirect: "manual",
 				headers: {
@@ -118,7 +119,7 @@ module.exports = {
 
 			const m = regexVk.exec(cfg.url);
 			if (!m) {
-				throw new Error(`Не удалось распознать URL: ${cfg.url}`);
+				throw new Error(t("error.cannotParseUrl") + cfg.url);
 			}
 			const body =
 				"al=1&autoplay=1&claim=&force_no_repeat=true&is_video_page=true&list=&module=direct&show_next=1&video=" +
@@ -144,7 +145,7 @@ module.exports = {
 			);
 
 			if (!vkVideoInfo.ok) {
-				throw new Error(`Не удалось получить информацию о видео: ${vkVideoInfo.status} ${vkVideoInfo.statusText}`);
+				throw new Error(t("error.cannotGetVideoInfoApi") + vkVideoInfo.status + " " + vkVideoInfo.statusText);
 			}
 
 			let text = await vkVideoInfo.textConverted();
@@ -155,23 +156,23 @@ module.exports = {
 
 			if (typeof json.payload?.[1]?.[4]?.player !== "object") {
 				throw new Error(
-					`Не удалось загрузить информацию о видео: ${cfg.url}\r\n\r\n${ json.payload?.[1]?.[0] ?? "неизвестно" }`
+					t("error.cannotLoadVideoInfo") + cfg.url + "\r\n\r\n" + (json.payload?.[1]?.[0] ?? t("error.unknownError"))
 				);
 			}
 
 			const hlsUrl = json.payload?.[1]?.[4]?.player?.params?.[0]?.hls;
 			if (!hlsUrl) {
-				throw new Error(`Не удалось получить HLS ссылку: ${cfg.url}`);
+				throw new Error(t("error.cannotGetHlsLink") + cfg.url);
 			}
 			const hls = await getManifest(
 				hlsUrl,
-				"Не удалось получить видео:",
+				t("error.cannotGetVideo"),
 				options
 			);
 
 			const playlists = hls["playlists"];
 			if (!playlists || !playlists.length) {
-				throw new Error("Не удалось получить список качеств видео: " + cfg.url);
+				throw new Error(t("error.cannotGetVideoQualities") + cfg.url);
 			}
 			const [playlist, quality] = await selectVideoQuality(cfg, playlists);
 
@@ -180,23 +181,23 @@ module.exports = {
 
 			const segmentsInfo = await getManifest(
 				segmentsBase,
-				"Не удалось получить сегменты:",
+				t("error.cannotGetSegments"),
 				options
 			);
 
 			if (!segmentsInfo.segments || !segmentsInfo.segments.length) {
-				throw new Error("Не удалось получить список сегментов видео: " + cfg.url);
+				throw new Error(t("error.cannotGetSegmentList") + cfg.url);
 			}
 			const segmentsUrls = segmentsInfo.segments.map(segment =>
 				new URL(segmentsBase + segment["uri"]).href
 			);
 			cfg.video = path.join(cfg.video, cfg.title);
-			
+
 			const name = await downloadFile(cfg, segmentsUrls, options);
 			return [name, quality];
 		} catch (e) {
 			if (e.message) throw e;
-			throw new Error(`VK Video: ошибка при загрузке видео ${cfg.url}`);
+			throw new Error(t("error.vkLoadError") + cfg.url);
 		}
 	},
 };
