@@ -168,7 +168,7 @@ btnFolder.addEventListener("click", async () => {
 		dirEl.value = p;
 		dirYoutube.value = p;
 		convertDir.value = p;
-		saveCurrentSettings();
+		await saveCurrentSettings().catch(() => {});
 	}
 });
 btnFolderYoutube.addEventListener("click", async () => {
@@ -177,7 +177,7 @@ btnFolderYoutube.addEventListener("click", async () => {
 		dirYoutube.value = p;
 		dirEl.value = p;
 		convertDir.value = p;
-		saveCurrentSettings();
+		await saveCurrentSettings().catch(() => {});
 	}
 });
 btnConvertFolder.addEventListener("click", async () => {
@@ -186,7 +186,7 @@ btnConvertFolder.addEventListener("click", async () => {
 		convertDir.value = p;
 		dirEl.value = p;
 		dirYoutube.value = p;
-		saveCurrentSettings();
+		await saveCurrentSettings().catch(() => {});
 	}
 });
 btnConvertFile.addEventListener("click", async () => {
@@ -195,8 +195,8 @@ btnConvertFile.addEventListener("click", async () => {
 });
 
 // Save settings on format change
-formatOther.addEventListener("change", saveCurrentSettings);
-audioFormatOther.addEventListener("change", saveCurrentSettings);
+formatOther.addEventListener("change", () => saveCurrentSettings().catch(() => {}));
+audioFormatOther.addEventListener("change", () => saveCurrentSettings().catch(() => {}));
 
 window.api.onDownloadProgress(data => {
 	if (data.stage === "segments" && data.total > 0) {
@@ -352,7 +352,7 @@ document.addEventListener("keydown", e => {
 	}
 	// Escape - cancel download
 	if (e.key === "Escape" && isDownloading) {
-		// Handled by main process abort
+		window.api.cancelDownload();
 	}
 });
 

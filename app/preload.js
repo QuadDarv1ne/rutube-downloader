@@ -41,6 +41,10 @@ contextBridge.exposeInMainWorld("api", {
 	// External links
 	openExternal: (url) => ipcRenderer.invoke("open-external", url),
 
+	// Cancel
+	cancelDownload: () => ipcRenderer.invoke("cancel-download"),
+	isDownloading: () => ipcRenderer.invoke("is-downloading"),
+
 	// Settings
 	getSettings: () => ipcRenderer.invoke("get-settings"),
 	saveSettings: (data) => ipcRenderer.invoke("save-settings", data),

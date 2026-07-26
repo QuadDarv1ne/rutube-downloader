@@ -157,7 +157,7 @@ module.exports = {
 			}
 
 			let text = await vkVideoInfo.textConverted();
-			const json = JSON.parse(text.replace(/<!--/g, ""));
+			const json = JSON.parse(text.replace(/<!--/g, "").replace(/-->/g, ""));
 			cfg.title = sanitizeTitle(cfg.title, json.payload?.[1]?.[0]);
 
 			const options = { headers };

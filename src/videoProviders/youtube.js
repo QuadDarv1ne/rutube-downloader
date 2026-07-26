@@ -5,7 +5,7 @@ const { createDir } = require("../fsUtils");
 const { sanitizeTitle } = require("./titleUtils");
 const { t } = require("../i18n");
 
-const regex_youtube = /^https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]+/;
+const regex_youtube = /^https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|live\/|embed\/)|youtu\.be\/)[\w-]+/;
 
 // Варианты качества для UI и соответствующие строки формата yt-dlp
 const QUALITY_FORMATS = {

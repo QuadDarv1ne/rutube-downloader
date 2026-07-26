@@ -25,15 +25,22 @@ const joinNames = list => ({ filename: list.join(", ") });
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const MAX_SEGMENT_RETRIES = 3;
+const SEGMENT_TIMEOUT = 60000;
 
 async function downloadSegment(segmentUrl, segmentFilePath, options, signal) {
 	let lastError;
 	for (let attempt = 1; attempt <= MAX_SEGMENT_RETRIES; attempt++) {
 		try {
 			if (signal && signal.aborted) {
+				try { fs.unlinkSync(segmentFilePath); } catch {}
 				return new Error(t("error.downloadCancelled"));
 			}
-			let rs = await fetch(segmentUrl, { ...options, signal });
+			const controller = new AbortController();
+			const timer = setTimeout(() => controller.abort(), SEGMENT_TIMEOUT);
+			// Combine external signal with timeout signal
+			if (signal) signal.addEventListener("abort", () => controller.abort(), { once: true });
+			let rs = await fetch(segmentUrl, { ...options, signal: controller.signal });
+			clearTimeout(timer);
 			if (rs.ok) {
 				await streamPipeline(
 					rs.body,
@@ -44,6 +51,10 @@ async function downloadSegment(segmentUrl, segmentFilePath, options, signal) {
 				lastError = new Error(`HTTP ${rs.status} ${rs.statusText}`);
 			}
 		} catch (e) {
+			if (signal && signal.aborted) {
+				try { fs.unlinkSync(segmentFilePath); } catch {}
+				return new Error(t("error.downloadCancelled"));
+			}
 			lastError = e;
 		}
 		// Clean up partial file before retry

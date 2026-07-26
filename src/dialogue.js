@@ -41,7 +41,7 @@ module.exports = {
 		}
 	},
 
-	selectVideoQuality: (cfg, playlists, arr) => {
+	selectVideoQuality: (cfg, playlists) => {
 		const widthList = [];
 		let arrays = [];
 		const qualitiesOptions = playlists.map(({ attributes }, index) => {
@@ -63,9 +63,6 @@ module.exports = {
 				{ index: ind, label: qualitiesOptions[ind] },
 				playlists[ind].attributes.CODECS ?? null,
 			];
-			if (arr) {
-				arrays.push(playlists[ind].segments);
-			}
 			return arrays;
 		}
 
@@ -77,9 +74,6 @@ module.exports = {
 					cfg.quality,
 					playlists[selectedIndex].attributes.CODECS ?? null,
 				];
-				if (arr) {
-					arrays.push(playlists[selectedIndex].segments);
-				}
 				return arrays;
 			}
 		}
@@ -91,8 +85,10 @@ module.exports = {
 		console.log(`\u00A0`);
 		for (let item of qualitiesOptions) console.log(item);
 
-		return new Promise(resolve =>
-			getRL().question("", answer => {
+		return new Promise((resolve, reject) => {
+			const rl = getRL();
+			rl.on("close", () => reject(new Error(t("error.downloadCancelled"))));
+			rl.question("", answer => {
 				let arrays = [];
 				const index = Number.parseInt(answer);
 				if (
@@ -111,9 +107,6 @@ module.exports = {
 						{ index: ind, label: qualitiesOptions[ind] },
 						playlists[ind].attributes.CODECS ?? null,
 					];
-					if (arr) {
-						arrays.push(playlists[ind].segments);
-					}
 					resolve(arrays);
 					return;
 				}
@@ -125,11 +118,8 @@ module.exports = {
 					{ index, label: qualitiesOptions[index] },
 					playlists[index].attributes.CODECS ?? null,
 				];
-				if (arr) {
-					arrays.push(playlists[index].segments);
-				}
 				resolve(arrays);
-			})
-		);
+			});
+		});
 	},
 };

@@ -6,7 +6,7 @@ const { sanitizeTitle } = require("./titleUtils");
 const { fetchWithTimeout } = require("./fetchTimeout");
 const { t } = require("../i18n");
 
-const regex_rutube = /^https?:\/\/rutube\.ru\/video\/(private\/)?(\w+)/;
+const regex_rutube = /^https?:\/\/rutube\.(?:ru|com)\/video\/(private\/)?(\w+)/;
 // https://rutube.ru/video/private/3a16563c8168f75359cd099f76ff548e/?p=jXdLqNoqk4MzoCLAGH3-sw
 module.exports = {
 	mayUse: url => regex_rutube.test(url),

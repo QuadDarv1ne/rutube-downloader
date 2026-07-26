@@ -36,6 +36,7 @@ process.on("uncaughtException", err => {
 	console.log(
 		_colors.redBright((err.message || err))
 	);
+	process.exitCode = 1;
 });
 
 process.on("unhandledRejection", (reason) => {

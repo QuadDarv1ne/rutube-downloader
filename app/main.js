@@ -15,8 +15,13 @@ function logCrash(label, err) {
 	console.error(msg);
 }
 
-process.on("uncaughtException", err => { logCrash("uncaughtException", err); });
-process.on("unhandledRejection", err => { logCrash("unhandledRejection", err); });
+process.on("uncaughtException", err => {
+	logCrash("uncaughtException", err);
+	process.exit(1);
+});
+process.on("unhandledRejection", err => {
+	logCrash("unhandledRejection", err);
+});
 
 let mainWindow = null;
 let activeDownload = null;
@@ -51,7 +56,7 @@ function createTray() {
 	let icon;
 	try {
 		if (fs.existsSync(iconPath)) {
-			icon = Tray ? new Tray(iconPath) : null;
+			icon = new Tray(iconPath);
 		}
 	} catch {}
 	if (!icon) return;
@@ -262,7 +267,9 @@ app.on("child-process-gone", (event, details) => {
 // --- IPC ---
 
 ipcMain.handle("open-external", (_, url) => {
-	shell.openExternal(url);
+	if (typeof url === "string" && /^https?:\/\//.test(url)) {
+		shell.openExternal(url);
+	}
 });
 
 // Settings
@@ -342,6 +349,18 @@ ipcMain.handle("select-file", async (_, title, filters) => {
 		return null;
 	}
 });
+
+// Cancel
+ipcMain.handle("cancel-download", () => {
+	if (activeDownload) {
+		activeDownload.abort();
+		activeDownload = null;
+		return true;
+	}
+	return false;
+});
+
+ipcMain.handle("is-downloading", () => activeDownload !== null);
 
 // Download
 ipcMain.handle(

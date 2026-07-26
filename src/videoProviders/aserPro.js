@@ -5,7 +5,7 @@ const { getManifest } = require("../m3u8Utils");
 const { sanitizeTitle } = require("./titleUtils");
 const { t } = require("../i18n");
 
-const regexAserPro = /^https?:\/\/aser\.pro\/content\/.+?\/hls\/index.m3u8$/;
+const regexAserPro = /^https?:\/\/aser\.pro\/content\/.+?\/hls\/index\.m3u8/;
 
 module.exports = {
 	mayUse: url => regexAserPro.test(url),
