@@ -84,14 +84,36 @@ function buildMenu() {
 				{
 					label: i18n.t("menu.help.about"),
 					click: () => {
+						const pkg = require("../package.json");
 						dialog.showMessageBox(mainWindow, {
 							type: "info",
 							title: i18n.t("app.heading"),
-							message: i18n.t("app.heading"),
-							detail: `v${require("../package.json").version}\n\n${i18n.t("app.heading")} \u2014 ${i18n.t("menu.help.about").toLowerCase()}\nElectron ${process.versions.electron}\nNode ${process.versions.node}\nChromium ${process.versions.chrome}`,
+							message: i18n.t("app.heading") + " v" + pkg.version,
+							detail: [
+								i18n.t("menu.help.aboutAuthor") + ": Дуплей Максим Игоревич",
+								"",
+								i18n.t("menu.help.school") + ": Maestro7IT",
+								"",
+								i18n.t("menu.help.links") + ":",
+								"  GitHub: github.com/QuadDarv1ne",
+								"  VK: vk.com/maestro7it",
+								"  Rutube: rutube.ru/channel/4218729",
+								"  ORCID: orcid.org/0009-0007-7605-539X",
+								"  Stepik: stepik.org/users/150943726",
+								"  School: school-maestro7it.ru",
+								"",
+								"Electron " + process.versions.electron,
+								"Node " + process.versions.node,
+								"Chromium " + process.versions.chrome,
+							].join("\n"),
 						});
 					},
 				},
+				{
+					label: i18n.t("menu.help.authorSite"),
+					click: () => shell.openExternal("https://via-antiqua-maestro7it.amvera.io/"),
+				},
+				{ type: "separator" },
 				{
 					label: i18n.t("menu.help.github"),
 					click: () => shell.openExternal("https://github.com/QuadDarv1ne/rutube-downloader"),

@@ -146,6 +146,10 @@
   "menu.settings.parallelCount": "потоков",
   "menu.help": "Справка",
   "menu.help.about": "О программе",
+  "menu.help.aboutAuthor": "Автор",
+  "menu.help.school": "Школа программирования",
+  "menu.help.links": "Ссылки",
+  "menu.help.authorSite": "Сайт автора",
   "menu.help.github": "Открыть на GitHub",
   "menu.help.report": "Сообщить об ошибке"
 }

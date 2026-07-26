@@ -146,6 +146,10 @@
   "menu.settings.parallelCount": "个流",
   "menu.help": "帮助",
   "menu.help.about": "关于",
+  "menu.help.aboutAuthor": "作者",
+  "menu.help.school": "编程学校",
+  "menu.help.links": "链接",
+  "menu.help.authorSite": "作者网站",
   "menu.help.github": "在 GitHub 上打开",
   "menu.help.report": "报告错误"
 }

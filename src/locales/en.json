@@ -146,6 +146,10 @@
   "menu.settings.parallelCount": "streams",
   "menu.help": "Help",
   "menu.help.about": "About",
+  "menu.help.aboutAuthor": "Author",
+  "menu.help.school": "Programming School",
+  "menu.help.links": "Links",
+  "menu.help.authorSite": "Author's Website",
   "menu.help.github": "Open on GitHub",
   "menu.help.report": "Report a Bug"
 }
