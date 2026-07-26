@@ -131,7 +131,7 @@ module.exports = {
 			const videoId = isLive && m[1][0] !== "-" ? "-" + m[1] : m[1];
 			const body =
 				"al=1&autoplay=1&claim=&force_no_repeat=true&is_video_page=true&list=&module=direct&show_next=1&video=" +
-				videoId;
+				videoId + (isLive ? "&live=1" : "");
 
 			const headers = {
 				...browserHeaders,
@@ -169,12 +169,23 @@ module.exports = {
 			}
 
 			const hlsUrl = json.payload?.[1]?.[4]?.player?.params?.[0]?.hls
-				|| json.payload?.[1]?.[4]?.player?.params?.[0]?.hls_ondemand;
+				|| json.payload?.[1]?.[4]?.player?.params?.[0]?.hls_ondemand
+				|| json.payload?.[1]?.[4]?.player?.params?.[0]?.hls_live
+				|| json.payload?.[1]?.[4]?.player?.params?.[0]?.hls_live_dash;
 			if (!hlsUrl) {
 				throw new Error(t("error.cannotGetHlsLink") + cfg.url);
 			}
+			// For live streams, add live parameter and disable repeat
+			let hlsRequestUrl = hlsUrl;
+			if (isLive) {
+				// Add live parameter and disable repeat for live streams
+				const urlObj = new URL(hlsUrl);
+				urlObj.searchParams.set('live', '1');
+				urlObj.searchParams.set('live_no_repeat', '1');
+				hlsRequestUrl = urlObj.toString();
+			}
 			const hls = await getManifest(
-				hlsUrl,
+				hlsRequestUrl,
 				t("error.cannotGetVideo"),
 				options
 			);
@@ -204,6 +215,16 @@ module.exports = {
 			if (!cfg.parallelNum || cfg.parallelNum > 3) {
 				cfg.parallelNum = 3;
 			}
+			// For live streams, limit to last 2 hours to avoid downloading too many segments
+			if (isLive && segmentsUrls.length > 2400) {
+				// 2400 segments * ~5 seconds = ~167 minutes (2.7 hours)
+				// Trim to last 2 hours (1440 segments at 5s each)
+				const maxSegments = 1440;
+				console.log(`[VK Live] Limiting to last ${maxSegments} segments (~${Math.floor(maxSegments * 5 / 60)}min)`);
+				segmentsUrls.splice(0, segmentsUrls.length - maxSegments);
+			}
+			// Log segment count for debugging
+			console.log(`[VK] Total segments to download: ${segmentsUrls.length}`);
 			cfg.video = path.join(cfg.video, cfg.title);
 
 			const name = await downloadFile(cfg, segmentsUrls, options);
