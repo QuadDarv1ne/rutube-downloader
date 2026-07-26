@@ -20,8 +20,6 @@ const streamPipeline = util.promisify(stream.pipeline);
 const existsCount = list =>
 	list.reduce((sum, item) => (item ? sum + 1 : sum), 0);
 
-const joinNames = list => ({ filename: list.join(", ") });
-
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 exports.delay = delay;
 
@@ -141,8 +139,9 @@ exports.downloadFile = async function (cfg, segments, options) {
 	const arrFiles = [];
 	const activeSegmentsNums = new Set();
 	let progressStopped = false;
+	let totalBytes = 0;
 
-	progress.start(segments.length, 0, { filename: " " });
+	progress.start(segments.length, 0, { filename: " ", totalBytes: 0 });
 
 	await parallelFor(
 		cfg.parallelNum,
@@ -157,7 +156,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 			if (!progressStopped) {
 				progress.update(
 					existsCount(arrFiles),
-					joinNames([...activeSegmentsNums].sort((a, b) => a - b))
+					{ filename: [...activeSegmentsNums].sort((a, b) => a - b).join(", ") || " ", totalBytes }
 				);
 			}
 			if (typeof cfg.onProgress === "function") {
@@ -186,10 +185,11 @@ exports.downloadFile = async function (cfg, segments, options) {
 			arrFiles[segmentIndex] = segmentFilePath;
 			activeSegmentsNums.delete(segmentIndex + 1);
 
+			try { totalBytes += fs.statSync(segmentFilePath).size; } catch {}
 			if (!progressStopped) {
 				progress.update(
 					existsCount(arrFiles),
-					joinNames([...activeSegmentsNums].sort((a, b) => a - b))
+					{ filename: [...activeSegmentsNums].sort((a, b) => a - b).join(", ") || " ", totalBytes }
 				);
 			}
 			if (typeof cfg.onProgress === "function") {
@@ -203,7 +203,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 	);
 
 	if (!progressStopped) {
-		progress.update(existsCount(arrFiles), { filename: " " });
+		progress.update(existsCount(arrFiles), { filename: " ", totalBytes });
 		progress.stop();
 	}
 

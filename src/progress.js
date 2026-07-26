@@ -31,7 +31,25 @@ function formatBar(optionsBar, paramsBar, payloadBar) {
 		optionsBar.barIncompleteString.slice(0, incompleteSize);
 	const percentage = Math.floor(paramsBar.progress * 100) + "";
 	const stopTime = Date.now();
-	const elapsedTime = formatTime(Math.round(stopTime - paramsBar.startTime));
+	const elapsedTime = stopTime - paramsBar.startTime;
+
+	// Speed calculation
+	const totalBytes = payloadBar.totalBytes || 0;
+	const speed = totalBytes > 0 && elapsedTime > 0
+		? totalBytes / (elapsedTime / 1000)
+		: 0;
+	const speedStr = formatSpeed(speed);
+
+	// ETA calculation
+	const remaining = paramsBar.total - paramsBar.value;
+	let etaStr = "--:--";
+	if (speed > 0 && remaining > 0) {
+		// Estimate average bytes per segment from what we have so far
+		const avgBytes = paramsBar.value > 0 ? totalBytes / paramsBar.value : 0;
+		const remainingBytes = remaining * avgBytes;
+		const etaSec = Math.round(remainingBytes / speed);
+		etaStr = formatTime(etaSec * 1000);
+	}
 
 	const provider = " " +
 		_colors.white("|") +
@@ -50,10 +68,25 @@ function formatBar(optionsBar, paramsBar, payloadBar) {
 		" " +
 		_colors.white("|") +
 		" " +
-		elapsedTime +
+		_colors.yellowBright(speedStr) +
+		" " +
+		_colors.white("|") +
+		" " +
+		_colors.green("ETA " + etaStr) +
+		" " +
+		_colors.white("|") +
+		" " +
+		formatTime(elapsedTime) +
 		provider +
 		payload;
 	return barStr;
+}
+
+function formatSpeed(bytesPerSec) {
+	if (bytesPerSec <= 0) return "  0 B/s";
+	if (bytesPerSec < 1024) return bytesPerSec.toFixed(0) + " B/s";
+	if (bytesPerSec < 1024 * 1024) return (bytesPerSec / 1024).toFixed(1) + " KB/s";
+	return (bytesPerSec / (1024 * 1024)).toFixed(1) + " MB/s";
 }
 
 function formatTime(value) {

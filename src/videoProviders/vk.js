@@ -1,10 +1,12 @@
 const path = require("node:path");
+const fs = require("node:fs");
 const _colors = require("ansi-colors");
 const { getManifest } = require("../m3u8Utils");
 const { configure } = require("../configure");
 const { selectVideoQuality } = require("../dialogue");
 const { downloadFile, downloadSegment, mergeAndConvert, delay } = require("../downloadFile");
 const { createDir, deleteFiles } = require("../fsUtils");
+const { getProgress } = require("../progress");
 const { sanitizeTitle } = require("./titleUtils");
 const { fetchWithTimeout } = require("./fetchTimeout");
 const { t } = require("../i18n");
@@ -113,6 +115,13 @@ async function downloadLiveStream(hlsRequestUrl, cfg, options) {
 		_colors.yellowBright(cfg.title),
 		"\n"
 	);
+
+	const progress = getProgress();
+	const liveMaxSegments = 500;
+	progress.start(liveMaxSegments, 0, { filename: " ", totalBytes: 0 });
+	let liveProgressDone = false;
+	let totalBytes = 0;
+
 	console.log(`[VK Live] Streaming — refreshing every ${refreshInterval}ms, ${maxParallel} parallel downloads`);
 
 	while (staleCount < maxStaleChecks) {
@@ -152,6 +161,7 @@ async function downloadLiveStream(hlsRequestUrl, cfg, options) {
 					return downloadSegment(segUrl, filePath, options, idx).then(err => {
 						if (!err) {
 							downloadedFiles.push(filePath);
+							try { totalBytes += fs.statSync(filePath).size; } catch {}
 						} else {
 							console.log(_colors.yellowBright(`[VK Live] Segment #${idx} failed: ${err.message}`));
 						}
@@ -159,6 +169,17 @@ async function downloadLiveStream(hlsRequestUrl, cfg, options) {
 				}));
 
 				segmentCounter += batch.length;
+
+				if (!liveProgressDone) {
+					const displayTotal = Math.max(segmentCounter, downloadedFiles.length);
+					if (displayTotal > liveMaxSegments) {
+						progress.setTotal(displayTotal + 50);
+					}
+					progress.update(downloadedFiles.length, { filename: " ", totalBytes });
+					if (typeof cfg.onProgress === "function") {
+						cfg.onProgress({ stage: "segments", current: downloadedFiles.length, total: displayTotal });
+					}
+				}
 			}
 
 			console.log(`[VK Live] ${downloadedFiles.length}/${segmentCounter} segments downloaded (${newSegUrls.length} new)`);
@@ -173,11 +194,16 @@ async function downloadLiveStream(hlsRequestUrl, cfg, options) {
 	}
 
 	if (!downloadedFiles.length) {
+		progress.stop();
 		throw new Error(t("error.cannotGetSegmentList") + cfg.url);
 	}
 
 	// Sort files by segment number to ensure correct order
 	downloadedFiles.sort();
+
+	liveProgressDone = true;
+	progress.update(downloadedFiles.length, { filename: " ", totalBytes });
+	progress.stop();
 
 	console.log(`[VK Live] All ${downloadedFiles.length} segments downloaded, merging...`);
 
