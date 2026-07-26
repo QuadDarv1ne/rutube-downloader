@@ -6,7 +6,7 @@ const { sanitizeTitle } = require("./titleUtils");
 const { fetchWithTimeout } = require("./fetchTimeout");
 const { t } = require("../i18n");
 
-const regex_ok = /^https?:\/\/ok\.ru\/(?:video|videoembed)\/(\d+)/;
+const regex_ok = /^https?:\/\/(?:www\.)?ok\.ru\/(?:video|videoembed)\/(\d+)/;
 
 module.exports = {
 	mayUse: url => regex_ok.test(url),

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu, shell, Tray, clipboard, Notification } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, Menu, shell, Tray, clipboard, Notification, nativeImage } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 const { runDownload } = require("../src/runDownload");
@@ -34,7 +34,7 @@ const URL_PATTERNS = [
 	/^https?:\/\/(?:www\.)?(?:youtube\.com\/watch|youtu\.be\/)/,
 	/^https?:\/\/(?:www\.)?rutube\.ru\/video\//,
 	/^https?:\/\/(?:vk|vkvideo)\.(?:ru|com)\/(?:playlist\/.+)?(?:video|live-)/,
-	/^https?:\/\/(?:www\.)?ok\.ru\/video\//,
+	/^https?:\/\/(?:www\.)?ok\.ru\/(?:video|videoembed)\//,
 	/^https?:\/\/aser\.pro\/content\//,
 ];
 
@@ -52,11 +52,32 @@ function getClipboardUrl() {
 // --- System Tray ---
 
 function createTray() {
-	const iconPath = path.join(__dirname, "..", "bin", "icon.png");
 	let icon;
 	try {
+		const iconPath = path.join(__dirname, "..", "bin", "icon.png");
 		if (fs.existsSync(iconPath)) {
 			icon = new Tray(iconPath);
+		} else {
+			// Create a simple 16x16 blue circle icon
+			const size = 16;
+			const canvas = Buffer.alloc(size * size * 4);
+			const cx = size / 2, cy = size / 2, r = size / 2 - 1;
+			for (let y = 0; y < size; y++) {
+				for (let x = 0; x < size; x++) {
+					const dx = x - cx, dy = y - cy;
+					const idx = (y * size + x) * 4;
+					if (dx * dx + dy * dy <= r * r) {
+						canvas[idx] = 13;   // R
+						canvas[idx + 1] = 110; // G
+						canvas[idx + 2] = 253; // B
+						canvas[idx + 3] = 255; // A
+					} else {
+						canvas[idx + 3] = 0;
+					}
+				}
+			}
+			const img = nativeImage.createFromBuffer(canvas, { width: size, height: size });
+			icon = new Tray(img);
 		}
 	} catch {}
 	if (!icon) return;
@@ -73,7 +94,7 @@ function createTray() {
 		},
 		{ type: "separator" },
 		{
-			label: i18n.t("menu.file.exit") || "Выход",
+			label: i18n.t("tray.quit") || "Выход",
 			click: () => {
 				isQuitting = true;
 				app.quit();

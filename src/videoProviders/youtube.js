@@ -68,6 +68,9 @@ module.exports = {
 		const send = msg => typeof cfg.onProgress === "function" && cfg.onProgress({ stage: "download", message: msg });
 
 		try {
+			if (cfg.signal && cfg.signal.aborted) {
+				throw new Error(t("error.downloadCancelled"));
+			}
 			send(t("youtube.fetchingInfo"));
 			const slowHintTimer = setTimeout(() => {
 				send(t("youtube.slowHint"));
@@ -82,6 +85,9 @@ module.exports = {
 				});
 			} finally {
 				clearTimeout(slowHintTimer);
+			}
+			if (cfg.signal && cfg.signal.aborted) {
+				throw new Error(t("error.downloadCancelled"));
 			}
 			const title = cleanTitle(sanitizeTitle(info.title));
 			cfg.title = title;

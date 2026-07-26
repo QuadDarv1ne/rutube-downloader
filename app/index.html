@@ -110,11 +110,14 @@
 				border-radius: 8px;
 				background: #252525;
 				font-size: 13px;
-				min-height: 48px;
 				max-height: 120px;
 				overflow-y: auto;
 				white-space: pre-wrap;
 				word-break: break-all;
+				display: none;
+			}
+			#status:not(:empty) {
+				display: block;
 			}
 			#status.success {
 				color: #20c997;

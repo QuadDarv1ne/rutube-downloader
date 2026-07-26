@@ -1,36 +1,39 @@
-const returnValue = v => () => v;
-
 exports.parallelFor = async function (parallelNum, items, fn) {
 	if (!items.length || parallelNum < 1) return;
 
-	const parallels = [];
 	const itemsLength = items.length;
-	let failed = false;
+	let firstError = null;
 
+	// Wrap each task so errors are captured but the race still works
+	function runTask(item, index) {
+		return fn(item, index).then(
+			() => ({ ok: true, index }),
+			err => {
+				if (!firstError) firstError = err;
+				return { ok: false, index, err };
+			}
+		);
+	}
+
+	const parallels = [];
 	let index = 0;
 	for (let i = 0; i < parallelNum && index < itemsLength; i++) {
-		parallels[i] = fn(items[index], index).then(returnValue(i));
+		parallels[i] = runTask(items[index], index);
 		index++;
 	}
 
-	try {
-		while (index < itemsLength && !failed) {
-			const i = await Promise.race(parallels);
-			parallels[i] = fn(items[index], index).then(returnValue(i));
-			index++;
+	while (index < itemsLength && !firstError) {
+		const result = await Promise.race(parallels);
+		if (!result.ok) {
+			// Error already captured in firstError
+			break;
 		}
-	} catch (e) {
-		failed = true;
+		parallels[result.index] = runTask(items[index], index);
+		index++;
 	}
 
-	if (!failed) {
-		await Promise.allSettled(parallels);
-		return;
-	}
+	// Wait for all remaining tasks to finish
+	await Promise.allSettled(parallels);
 
-	// failed: collect first error without waiting for hanging tasks
-	const errorResult = await Promise.race(
-		parallels.map(p => p.then(() => null, err => err))
-	);
-	if (errorResult) throw errorResult;
+	if (firstError) throw firstError;
 };
