@@ -78,6 +78,7 @@
   "error.cannotGetRedirectStep3": "Не удалось получить перенаправление (шаг 3): ",
   "error.cannotGetVideoInfoApi": "Не удалось получить информацию о видео: ",
   "error.cannotGetHlsLink": "Не удалось получить HLS ссылку: ",
+  "error.segmentFailed": "Ошибка скачивания сегмента",
   "error.vkLoadError": "VK Video: ошибка при загрузке видео ",
   "error.ytdlpNotFound": "yt-dlp не найден. Выполните npm install заново (для загрузки бинарника нужен доступ в интернет).",
   "error.cannotSaveVideo": "Не удалось сохранить видео",

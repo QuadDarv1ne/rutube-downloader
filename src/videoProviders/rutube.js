@@ -4,10 +4,13 @@ const { selectVideoQuality } = require("../dialogue");
 const { downloadFile } = require("../downloadFile");
 const { sanitizeTitle } = require("./titleUtils");
 const { fetchWithTimeout } = require("./fetchTimeout");
+const { configure } = require("../configure");
 const { t } = require("../i18n");
 
 const regex_rutube = /^https?:\/\/rutube\.(?:ru|com)\/video\/(private\/)?(\w+)/;
 // https://rutube.ru/video/private/3a16563c8168f75359cd099f76ff548e/?p=jXdLqNoqk4MzoCLAGH3-sw
+const browserHeaders = configure.browserHeaders;
+
 module.exports = {
 	mayUse: url => regex_rutube.test(url),
 
@@ -20,7 +23,7 @@ module.exports = {
 		const p = urlParse.search ? "&" + urlParse.search.slice(1) : "";
 		const resp = await fetchWithTimeout(
 			`https://rutube.ru/api/play/options/${m[2]}/?no_404=true&referer=https%3A%2F%2Frutube.ru${p}`,
-			{},
+			{ headers: browserHeaders },
 			30000
 		);
 		if (!resp.ok) {
@@ -78,7 +81,13 @@ module.exports = {
 			segment => urlPrefix + segment["uri"]
 		);
 		cfg.video = path.join(cfg.video, cfg.title);
-		const name = await downloadFile(cfg, segmentsUrls);
+		const options = {
+			headers: {
+				Referer: "https://rutube.ru/",
+				Origin: "https://rutube.ru",
+			},
+		};
+		const name = await downloadFile(cfg, segmentsUrls, options);
 		return [name, quality];
 	},
 };

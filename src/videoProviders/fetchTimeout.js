@@ -1,6 +1,6 @@
 const fetch = require("node-fetch");
 
-const DEFAULT_TIMEOUT = 30000;
+const DEFAULT_TIMEOUT = 60000;
 
 async function fetchWithTimeout(url, options = {}, timeout = DEFAULT_TIMEOUT) {
 	const controller = new AbortController();

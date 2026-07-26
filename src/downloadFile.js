@@ -24,21 +24,15 @@ const joinNames = list => ({ filename: list.join(", ") });
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-const MAX_SEGMENT_RETRIES = 3;
-const SEGMENT_TIMEOUT = 60000;
+const MAX_SEGMENT_RETRIES = 5;
+const SEGMENT_TIMEOUT = 120000;
 
-async function downloadSegment(segmentUrl, segmentFilePath, options, signal) {
+async function downloadSegment(segmentUrl, segmentFilePath, options, segmentIndex) {
 	let lastError;
 	for (let attempt = 1; attempt <= MAX_SEGMENT_RETRIES; attempt++) {
 		try {
-			if (signal && signal.aborted) {
-				try { fs.unlinkSync(segmentFilePath); } catch {}
-				return new Error(t("error.downloadCancelled"));
-			}
 			const controller = new AbortController();
 			const timer = setTimeout(() => controller.abort(), SEGMENT_TIMEOUT);
-			// Combine external signal with timeout signal
-			if (signal) signal.addEventListener("abort", () => controller.abort(), { once: true });
 			let rs = await fetch(segmentUrl, { ...options, signal: controller.signal });
 			clearTimeout(timer);
 			if (rs.ok) {
@@ -46,21 +40,24 @@ async function downloadSegment(segmentUrl, segmentFilePath, options, signal) {
 					rs.body,
 					fs.createWriteStream(segmentFilePath)
 				);
-				return null;
+				// Verify file was actually written
+				const stat = fs.statSync(segmentFilePath);
+				if (stat.size === 0) {
+					lastError = new Error(`Empty segment file (attempt ${attempt})`);
+					try { fs.unlinkSync(segmentFilePath); } catch {}
+				} else {
+					return null;
+				}
 			} else {
 				lastError = new Error(`HTTP ${rs.status} ${rs.statusText}`);
 			}
 		} catch (e) {
-			if (signal && signal.aborted) {
-				try { fs.unlinkSync(segmentFilePath); } catch {}
-				return new Error(t("error.downloadCancelled"));
-			}
 			lastError = e;
 		}
 		// Clean up partial file before retry
 		try { fs.unlinkSync(segmentFilePath); } catch {}
 		if (attempt < MAX_SEGMENT_RETRIES) {
-			await delay(1000 * attempt);
+			await delay(2000 * attempt);
 		}
 	}
 	return lastError;
@@ -90,9 +87,6 @@ exports.downloadFile = async function (cfg, segments, options) {
 		cfg.parallelNum,
 		segments,
 		async (segmentUrl, segmentIndex) => {
-			if (cfg.signal && cfg.signal.aborted) {
-				throw new Error(t("error.downloadCancelled"));
-			}
 			const ext = path.extname(segmentUrl.split("?")[0]) || ".ts";
 			const segmentFileName =
 				"segment-" + `${segmentIndex + 1}`.padStart(10, "0") + ext;
@@ -112,17 +106,25 @@ exports.downloadFile = async function (cfg, segments, options) {
 					total: segments.length,
 				});
 			}
+			// Small delay between segment starts to avoid rate limiting
+			if (segmentIndex % cfg.parallelNum === 0) {
+				await delay(200);
+			}
 
 			const error = await downloadSegment(
 				segmentUrl,
 				segmentFilePath,
 				options,
-				cfg.signal
+				segmentIndex + 1
 			);
 			if (error) {
 				progressStopped = true;
 				progress.stop();
-				throw error;
+				const segErr = new Error(
+					`${t("error.segmentFailed")} #${segmentIndex + 1}: ${error.message}`
+				);
+				console.log(_colors.redBright(segErr.message));
+				throw segErr;
 			}
 
 			arrFiles[segmentIndex] = segmentFilePath;

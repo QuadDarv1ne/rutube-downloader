@@ -1,5 +1,8 @@
 exports.parallelFor = async function (parallelNum, items, fn) {
-	if (!items.length || parallelNum < 1) return;
+	if (!items.length || !Number.isFinite(parallelNum) || parallelNum < 1) {
+		// Ensure at least 1 parallel task
+		parallelNum = 1;
+	}
 
 	const itemsLength = items.length;
 	let firstError = null;

@@ -200,6 +200,10 @@ module.exports = {
 			const segmentsUrls = segmentsInfo.segments.map(segment =>
 				new URL(segment["uri"], segmentsBase).href
 			);
+			// VK has strict rate limits — reduce parallelism
+			if (!cfg.parallelNum || cfg.parallelNum > 3) {
+				cfg.parallelNum = 3;
+			}
 			cfg.video = path.join(cfg.video, cfg.title);
 
 			const name = await downloadFile(cfg, segmentsUrls, options);

@@ -35,7 +35,13 @@ module.exports = {
 			new URL(segment["uri"], segmentsUrl).href
 		);
 		cfg.video = path.join(cfg.video, cfg.title);
-		const name = await downloadFile(cfg, segmentsUrls);
+		const options = {
+			headers: {
+				Referer: "https://aser.pro/",
+				Origin: "https://aser.pro",
+			},
+		};
+		const name = await downloadFile(cfg, segmentsUrls, options);
 		return [name, quality];
 	},
 };

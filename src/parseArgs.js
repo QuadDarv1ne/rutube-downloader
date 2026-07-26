@@ -146,14 +146,12 @@ function tryMatchOption(state, option, value) {
 		}
 
 		case "-p": {
-			state.parallelSegments = Number.parseInt(value);
-			if (
-				!Number.isFinite(state.parallelSegments) ||
-				state.parallelSegments < 1
-			)
+			const val = Number.parseInt(value);
+			if (!Number.isFinite(val) || val < 1)
 				throw new Error(
 					t("cli.error.invalidParallelCount")
 				);
+			state.parallelSegments = val;
 			return true;
 		}
 

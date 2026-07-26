@@ -4,9 +4,11 @@ const { selectVideoQuality } = require("../dialogue");
 const { downloadFile } = require("../downloadFile");
 const { sanitizeTitle } = require("./titleUtils");
 const { fetchWithTimeout } = require("./fetchTimeout");
+const { configure } = require("../configure");
 const { t } = require("../i18n");
 
 const regex_ok = /^https?:\/\/(?:www\.)?ok\.ru\/(?:video|videoembed)\/(\d+)/;
+const browserHeaders = configure.browserHeaders;
 
 module.exports = {
 	mayUse: url => regex_ok.test(url),
@@ -21,7 +23,7 @@ module.exports = {
 		}
 		const resp = await fetchWithTimeout(
 			`https://ok.ru/videoembed/${m[1]}`,
-			{},
+			{ headers: browserHeaders },
 			30000
 		);
 		if (!resp.ok) {
@@ -29,7 +31,7 @@ module.exports = {
 				t("error.cannotLoadVideoInfo") + cfg.url + "\r\n\r\n" + resp.status + " " + resp.statusText
 			);
 		}
-		let text = await resp.textConverted();
+		let text = await resp.text();
 
 		const _m = regex.exec(text);
 		if (!_m) {
@@ -72,7 +74,13 @@ module.exports = {
 			segment => new URL(segment["uri"], segmentsUrl).href
 		);
 		cfg.video = path.join(cfg.video, cfg.title);
-		const name = await downloadFile(cfg, segmentsUrls);
+		const options = {
+			headers: {
+				Referer: "https://ok.ru/",
+				Origin: "https://ok.ru",
+			},
+		};
+		const name = await downloadFile(cfg, segmentsUrls, options);
 		return [name, quality];
 	},
 };

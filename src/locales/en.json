@@ -78,6 +78,7 @@
   "error.cannotGetRedirectStep3": "Cannot get redirect (step 3): ",
   "error.cannotGetVideoInfoApi": "Cannot get video info: ",
   "error.cannotGetHlsLink": "Cannot get HLS link: ",
+  "error.segmentFailed": "Segment download failed",
   "error.vkLoadError": "VK Video: error loading video ",
   "error.ytdlpNotFound": "yt-dlp not found. Run npm install again (internet access needed to download the binary).",
   "error.cannotSaveVideo": "Cannot save video",
