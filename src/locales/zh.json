@@ -136,5 +136,16 @@
   "menu.language": "语言",
   "menu.lang.ru": "Русский",
   "menu.lang.en": "English",
-  "menu.lang.zh": "中文"
+  "menu.lang.zh": "中文",
+
+  "menu.file": "文件",
+  "menu.file.exit": "退出",
+  "menu.settings": "设置",
+  "menu.settings.language": "界面语言",
+  "menu.settings.parallel": "并行下载",
+  "menu.settings.parallelCount": "个流",
+  "menu.help": "帮助",
+  "menu.help.about": "关于",
+  "menu.help.github": "在 GitHub 上打开",
+  "menu.help.report": "报告错误"
 }

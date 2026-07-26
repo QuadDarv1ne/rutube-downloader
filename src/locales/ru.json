@@ -136,5 +136,16 @@
   "menu.language": "Язык",
   "menu.lang.ru": "Русский",
   "menu.lang.en": "English",
-  "menu.lang.zh": "中文"
+  "menu.lang.zh": "中文",
+
+  "menu.file": "Файл",
+  "menu.file.exit": "Выход",
+  "menu.settings": "Настройки",
+  "menu.settings.language": "Язык интерфейса",
+  "menu.settings.parallel": "Параллельные загрузки",
+  "menu.settings.parallelCount": "потоков",
+  "menu.help": "Справка",
+  "menu.help.about": "О программе",
+  "menu.help.github": "Открыть на GitHub",
+  "menu.help.report": "Сообщить об ошибке"
 }

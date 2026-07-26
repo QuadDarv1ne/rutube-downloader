@@ -136,5 +136,16 @@
   "menu.language": "Language",
   "menu.lang.ru": "Русский",
   "menu.lang.en": "English",
-  "menu.lang.zh": "中文"
+  "menu.lang.zh": "中文",
+
+  "menu.file": "File",
+  "menu.file.exit": "Exit",
+  "menu.settings": "Settings",
+  "menu.settings.language": "Interface Language",
+  "menu.settings.parallel": "Parallel Downloads",
+  "menu.settings.parallelCount": "streams",
+  "menu.help": "Help",
+  "menu.help.about": "About",
+  "menu.help.github": "Open on GitHub",
+  "menu.help.report": "Report a Bug"
 }

@@ -20,6 +20,11 @@ contextBridge.exposeInMainWorld("api", {
 		ipcRenderer.on("download-progress", handler);
 		return () => ipcRenderer.removeListener("download-progress", handler);
 	},
+	onLocaleChanged: cb => {
+		const handler = (_, locale) => cb(locale);
+		ipcRenderer.on("locale-changed", handler);
+		return () => ipcRenderer.removeListener("locale-changed", handler);
+	},
 	getLocale: () => ipcRenderer.invoke("get-locale"),
 	setLocale: (locale) => ipcRenderer.invoke("set-locale", locale),
 	getAvailableLocales: () => ipcRenderer.invoke("get-available-locales"),

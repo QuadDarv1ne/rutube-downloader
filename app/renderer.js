@@ -76,6 +76,12 @@ langSelect.addEventListener("change", async () => {
 	await applyTranslations();
 });
 
+window.api.onLocaleChanged(locale => {
+	localStorage.setItem("locale", locale);
+	langSelect.value = locale;
+	applyTranslations();
+});
+
 // --- UI helpers ---
 function setStatus(text, type = "") {
 	statusEl.textContent = text;
