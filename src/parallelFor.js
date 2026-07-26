@@ -23,10 +23,14 @@ exports.parallelFor = async function (parallelNum, items, fn) {
 		failed = true;
 	}
 
-	const settled = await Promise.allSettled(parallels);
-
-	if (failed) {
-		const firstError = settled.find(r => r.status === "rejected");
-		if (firstError) throw firstError.reason;
+	if (!failed) {
+		await Promise.allSettled(parallels);
+		return;
 	}
+
+	// failed: collect first error without waiting for hanging tasks
+	const errorResult = await Promise.race(
+		parallels.map(p => p.then(() => null, err => err))
+	);
+	if (errorResult) throw errorResult;
 };

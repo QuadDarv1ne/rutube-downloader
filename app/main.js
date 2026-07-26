@@ -1,9 +1,21 @@
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("node:path");
+const fs = require("node:fs");
 const { runDownload } = require("../src/runDownload");
 const { convertFile, extractAudio } = require("../src/convert");
 const { isValidFormat, isValidAudioFormat } = require("../src/formats");
 const i18n = require("../src/i18n");
+
+const crashLogPath = path.join(app.getPath("userData"), "crash.log");
+
+function logCrash(label, err) {
+	const msg = `[${new Date().toISOString()}] ${label}: ${err?.message || err}\n${err?.stack || ""}\n\n`;
+	try { fs.appendFileSync(crashLogPath, msg); } catch {}
+	console.error(msg);
+}
+
+process.on("uncaughtException", err => { logCrash("uncaughtException", err); });
+process.on("unhandledRejection", err => { logCrash("unhandledRejection", err); });
 
 let mainWindow = null;
 let activeDownload = null;
@@ -36,10 +48,15 @@ function createWindow() {
 	});
 }
 
+app.disableHardwareAcceleration();
+
 app.whenReady().then(createWindow);
 app.on("window-all-closed", () => app.quit());
 app.on("activate", () => {
 	if (BrowserWindow.getAllWindows().length === 0) createWindow();
+});
+app.on("child-process-gone", (event, details) => {
+	logCrash(`child-process-gone (${details.type}, reason=${details.reason})`, details.error);
 });
 
 ipcMain.handle("get-locale", () => i18n.getLocale());
@@ -148,7 +165,8 @@ ipcMain.handle(
 					filePath,
 					dir,
 					audioFormat,
-					sendProgress
+					sendProgress,
+					controller.signal
 				);
 				sendProgress({ stage: "done", filePath: audioPath });
 				return { ok: true, filePath: audioPath };
@@ -182,7 +200,7 @@ ipcMain.handle("convert", async (_, { src, dir, format }) => {
 	const controller = new AbortController();
 	activeConvert = controller;
 	try {
-		const filePath = await convertFile(src, dir, format, sendProgress);
+		const filePath = await convertFile(src, dir, format, sendProgress, controller.signal);
 		sendProgress({ stage: "done", filePath });
 		return { ok: true, filePath };
 	} catch (e) {
@@ -211,7 +229,7 @@ ipcMain.handle("extract-audio", async (_, { src, dir, format }) => {
 	const controller = new AbortController();
 	activeConvert = controller;
 	try {
-		const filePath = await extractAudio(src, dir, format, sendProgress);
+		const filePath = await extractAudio(src, dir, format, sendProgress, controller.signal);
 		sendProgress({ stage: "done", filePath });
 		return { ok: true, filePath };
 	} catch (e) {

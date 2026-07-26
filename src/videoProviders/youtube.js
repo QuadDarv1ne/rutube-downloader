@@ -109,8 +109,18 @@ module.exports = {
 			const subprocess = youtubedl.exec(cfg.url, downloadFlags);
 			attachProgressStream(subprocess.stderr, send);
 			if (subprocess.stdout) attachProgressStream(subprocess.stdout, send);
+
+			if (cfg.signal) {
+				cfg.signal.addEventListener("abort", () => {
+					try { subprocess.kill("SIGTERM"); } catch {}
+				}, { once: true });
+			}
+
 			await subprocess;
 		} catch (e) {
+			if (cfg.signal && cfg.signal.aborted) {
+				throw new Error(t("error.downloadCancelled"));
+			}
 			const msg = e.message || String(e);
 			if (msg.includes("ENOENT") || msg.includes("spawn") || msg.includes("not found")) {
 				throw new Error(t("error.ytdlpNotFound"));

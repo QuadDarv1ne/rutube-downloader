@@ -45,12 +45,13 @@ module.exports = {
 		const widthList = [];
 		let arrays = [];
 		const qualitiesOptions = playlists.map(({ attributes }, index) => {
-			const { width, height } = attributes.RESOLUTION;
+			const res = attributes.RESOLUTION || { width: 0, height: 0 };
+			const { width, height } = res;
 			widthList.push(width);
 			let codec = attributes.CODECS ? `(${attributes.CODECS})` : "";
 			return (
 				`${index}: ` +
-				_colors.yellowBright(`${width}x${height} `.padStart(10, ` `)) +
+				_colors.yellowBright(`${width}x${height} `.padStart(10, " ")) +
 				_colors.cyan(codec)
 			);
 		});
@@ -60,7 +61,7 @@ module.exports = {
 			arrays = [
 				playlists[ind]["uri"],
 				{ index: ind, label: qualitiesOptions[ind] },
-				playlists[ind].attributes.CODECS,
+				playlists[ind].attributes.CODECS ?? null,
 			];
 			if (arr) {
 				arrays.push(playlists[ind].segments);
@@ -74,7 +75,7 @@ module.exports = {
 				arrays = [
 					playlists[selectedIndex]["uri"],
 					cfg.quality,
-					playlists[selectedIndex].attributes.CODECS,
+					playlists[selectedIndex].attributes.CODECS ?? null,
 				];
 				if (arr) {
 					arrays.push(playlists[selectedIndex].segments);
@@ -84,7 +85,7 @@ module.exports = {
 		}
 		console.log(`\u00A0`);
 		console.log(
-			t("cli.quality.select").padStart(configure.padText) +
+			t("cli.quality.select").padStart(configure.padText, " ") +
 				_colors.yellowBright(`${cfg.title}`)
 		);
 		console.log(`\u00A0`);
@@ -108,7 +109,7 @@ module.exports = {
 					arrays = [
 						playlists[ind]["uri"],
 						{ index: ind, label: qualitiesOptions[ind] },
-						playlists[ind].attributes.CODECS,
+						playlists[ind].attributes.CODECS ?? null,
 					];
 					if (arr) {
 						arrays.push(playlists[ind].segments);
@@ -117,12 +118,12 @@ module.exports = {
 					return;
 				}
 				console.log(`\u00A0`);
-				console.log(t("cli.quality.selected").padStart(configure.padText));
+				console.log(t("cli.quality.selected").padStart(configure.padText, " "));
 				console.log(qualitiesOptions[index]);
 				arrays = [
 					playlists[index]["uri"],
 					{ index, label: qualitiesOptions[index] },
-					playlists[index].attributes.CODECS,
+					playlists[index].attributes.CODECS ?? null,
 				];
 				if (arr) {
 					arrays.push(playlists[index].segments);

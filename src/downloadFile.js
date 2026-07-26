@@ -24,21 +24,35 @@ const joinNames = list => ({ filename: list.join(", ") });
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-async function downloadSegment(segmentUrl, segmentFilePath, options) {
-	try {
-		let rs = await fetch(segmentUrl, options);
-		if (rs.ok) {
-			await streamPipeline(
-				rs.body,
-				fs.createWriteStream(segmentFilePath)
-			);
-			return null;
-		} else {
-			return new Error(`HTTP ${rs.status} ${rs.statusText}`);
+const MAX_SEGMENT_RETRIES = 3;
+
+async function downloadSegment(segmentUrl, segmentFilePath, options, signal) {
+	let lastError;
+	for (let attempt = 1; attempt <= MAX_SEGMENT_RETRIES; attempt++) {
+		try {
+			if (signal && signal.aborted) {
+				return new Error(t("error.downloadCancelled"));
+			}
+			let rs = await fetch(segmentUrl, { ...options, signal });
+			if (rs.ok) {
+				await streamPipeline(
+					rs.body,
+					fs.createWriteStream(segmentFilePath)
+				);
+				return null;
+			} else {
+				lastError = new Error(`HTTP ${rs.status} ${rs.statusText}`);
+			}
+		} catch (e) {
+			lastError = e;
 		}
-	} catch (e) {
-		return e;
+		// Clean up partial file before retry
+		try { fs.unlinkSync(segmentFilePath); } catch {}
+		if (attempt < MAX_SEGMENT_RETRIES) {
+			await delay(1000 * attempt);
+		}
 	}
+	return lastError;
 }
 
 exports.downloadFile = async function (cfg, segments, options) {
@@ -68,7 +82,7 @@ exports.downloadFile = async function (cfg, segments, options) {
 			if (cfg.signal && cfg.signal.aborted) {
 				throw new Error(t("error.downloadCancelled"));
 			}
-			const ext = path.extname(segmentUrl.split("?")[0]);
+			const ext = path.extname(segmentUrl.split("?")[0]) || ".ts";
 			const segmentFileName =
 				"segment-" + `${segmentIndex + 1}`.padStart(10, "0") + ext;
 			const segmentFilePath = path.join(cfg.video, segmentFileName);
@@ -91,7 +105,8 @@ exports.downloadFile = async function (cfg, segments, options) {
 			const error = await downloadSegment(
 				segmentUrl,
 				segmentFilePath,
-				options
+				options,
+				cfg.signal
 			);
 			if (error) {
 				progressStopped = true;
@@ -119,15 +134,17 @@ exports.downloadFile = async function (cfg, segments, options) {
 		}
 	);
 
-	progress.update(existsCount(arrFiles), { filename: " " });
-	await delay(1000);
-	progress.stop();
+	if (!progressStopped) {
+		progress.update(existsCount(arrFiles), { filename: " " });
+		await delay(1000);
+		progress.stop();
+	}
 
 	if (typeof cfg.onProgress === "function")
 		cfg.onProgress({ stage: "merge" });
 
 	const saveTitle = cfg.title;
-	const ext = path.extname(segments[0].split("?")[0]);
+	const ext = path.extname(segments[0].split("?")[0]) || ".ts";
 	const filesToMerge = arrFiles.filter(Boolean);
 	console.log("\u00A0");
 	console.log(_colors.yellowBright(t("cli.videoProcessing")));

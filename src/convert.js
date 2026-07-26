@@ -10,7 +10,7 @@ const AUDIO_ARGS = {
 	flac: ["-vn", "-codec:a", "flac"],
 };
 
-exports.convertFile = function (src, destDir, format, onProgress) {
+exports.convertFile = function (src, destDir, format, onProgress, signal) {
 	const ffmpeg = getFFmpegPath();
 	const srcName = path.basename(src, path.extname(src));
 	const outExt = getExt(format);
@@ -33,13 +33,24 @@ exports.convertFile = function (src, destDir, format, onProgress) {
 
 		const child = execFile(ffmpeg, args);
 		let stderr = "";
+		let aborted = false;
+
+		if (signal) {
+			signal.addEventListener("abort", () => {
+				aborted = true;
+				child.kill("SIGTERM");
+			});
+		}
+
 		child.stderr.on("data", chunk => {
 			stderr += chunk;
 		});
 		child.on("error", err => {
+			if (aborted) return reject(new Error(t("error.downloadCancelled")));
 			reject(new Error(t("ffmpeg.error.launch") + err.message));
 		});
 		child.on("exit", code => {
+			if (aborted) return reject(new Error(t("error.downloadCancelled")));
 			if (code)
 				reject(
 					new Error(
@@ -51,7 +62,7 @@ exports.convertFile = function (src, destDir, format, onProgress) {
 	});
 };
 
-exports.extractAudio = function (src, destDir, format, onProgress) {
+exports.extractAudio = function (src, destDir, format, onProgress, signal) {
 	const ffmpeg = getFFmpegPath();
 	const srcName = path.basename(src, path.extname(src));
 	const outExt = getAudioExt(format);
@@ -75,13 +86,24 @@ exports.extractAudio = function (src, destDir, format, onProgress) {
 
 		const child = execFile(ffmpeg, args);
 		let stderr = "";
+		let aborted = false;
+
+		if (signal) {
+			signal.addEventListener("abort", () => {
+				aborted = true;
+				child.kill("SIGTERM");
+			});
+		}
+
 		child.stderr.on("data", chunk => {
 			stderr += chunk;
 		});
 		child.on("error", err => {
+			if (aborted) return reject(new Error(t("error.downloadCancelled")));
 			reject(new Error(t("ffmpeg.error.launch") + err.message));
 		});
 		child.on("exit", code => {
+			if (aborted) return reject(new Error(t("error.downloadCancelled")));
 			if (code)
 				reject(
 					new Error(

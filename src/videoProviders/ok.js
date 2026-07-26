@@ -49,7 +49,7 @@ module.exports = {
 
 		const hlsUrl = new URL(url);
 
-		cfg.title = sanitizeTitle(cfg.title, metadata.movie.title);
+		cfg.title = sanitizeTitle(cfg.title, metadata.movie?.title);
 		const videoInfo = await getManifest(url, t("error.cannotGetVideo"));
 
 		process.title = "DOWNLOAD: " + cfg.title;

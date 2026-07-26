@@ -105,8 +105,7 @@ run()
 		console.log("\u00A0");
 		if (downFiles.length) {
 			console.log(
-				(t("cli.done") + " (" + downFiles.length + ")").padStart(configure.padEndText, " "),
-				_colors.yellowBright(`${downFiles.length}`)
+				(t("cli.done") + " (" + downFiles.length + ")").padStart(configure.padEndText, " ")
 			);
 			for (let file of downFiles)
 				console.log(
@@ -116,8 +115,7 @@ run()
 		}
 		if (errorFiles.length) {
 			console.log(
-				(t("status.error") + " (" + errorFiles.length + ")").padStart(configure.padEndText, " "),
-				_colors.redBright(`${errorFiles.length}`)
+				(t("status.error") + " (" + errorFiles.length + ")").padStart(configure.padEndText, " ")
 			);
 			for (let file of errorFiles)
 				console.log(
@@ -129,6 +127,7 @@ run()
 	.finally(() => {
 		closeRL();
 		process.title = globalTitle;
+		if (errorFiles.length) process.exitCode = 1;
 		/**
 		 * Код ниже удалять запрещено!
 		 */

@@ -18,13 +18,18 @@ const { t } = require("../i18n");
  * https://vk.ru/video-18255722_456244249
  * https://vkvideo.ru/video-18255722_456244249
  *
+ * Прямые трансляции (live)
+ * https://vkvideo.ru/live-183207497_456242848
+ * https://vk.com/live-183207497_456242848
+ *
  * Поддержка ссылки с плейлиста. Пример:
  * https://vkvideo.ru/playlist/62764098_2/video62764098_456239055
  *
  */
-const regexVk = /^https?:\/\/(?:vk|vkvideo)\.(?:ru|com)\/(?:playlist\/.+)?video(-?\d+_\d+)/;
+const regexVk = /^https?:\/\/(?:vk|vkvideo)\.(?:ru|com)\/(?:playlist\/.+)?(?:video|live-)(-?\d+_\d+)/;
 
-const extractCookies = function(setCookie = [], cookies = {}, domain) {
+const extractCookies = function(setCookie, cookies = {}, domain) {
+	if (!setCookie || !Array.isArray(setCookie)) return cookies;
 	for (let pair of setCookie) {
 		const res = cookieReg.exec(pair);
 		if (!res) continue;
@@ -121,9 +126,12 @@ module.exports = {
 			if (!m) {
 				throw new Error(t("error.cannotParseUrl") + cfg.url);
 			}
+			// For live- URLs the owner ID must be sent with a leading minus
+			const isLive = /\/live-/.test(cfg.url);
+			const videoId = isLive && m[1][0] !== "-" ? "-" + m[1] : m[1];
 			const body =
 				"al=1&autoplay=1&claim=&force_no_repeat=true&is_video_page=true&list=&module=direct&show_next=1&video=" +
-				m[1];
+				videoId;
 
 			const headers = {
 				...browserHeaders,
@@ -149,7 +157,7 @@ module.exports = {
 			}
 
 			let text = await vkVideoInfo.textConverted();
-			const json = JSON.parse(text.replace("<!--", ""));
+			const json = JSON.parse(text.replace(/<!--/g, ""));
 			cfg.title = sanitizeTitle(cfg.title, json.payload?.[1]?.[0]);
 
 			const options = { headers };
@@ -160,7 +168,8 @@ module.exports = {
 				);
 			}
 
-			const hlsUrl = json.payload?.[1]?.[4]?.player?.params?.[0]?.hls;
+			const hlsUrl = json.payload?.[1]?.[4]?.player?.params?.[0]?.hls
+				|| json.payload?.[1]?.[4]?.player?.params?.[0]?.hls_ondemand;
 			if (!hlsUrl) {
 				throw new Error(t("error.cannotGetHlsLink") + cfg.url);
 			}
@@ -177,7 +186,7 @@ module.exports = {
 			const [playlist, quality] = await selectVideoQuality(cfg, playlists);
 
 			const myURL = new URL(hlsUrl);
-			const segmentsBase = new URL(myURL.protocol + "//" + myURL.host + playlist).href;
+			const segmentsBase = new URL(playlist, myURL).href;
 
 			const segmentsInfo = await getManifest(
 				segmentsBase,
@@ -189,14 +198,14 @@ module.exports = {
 				throw new Error(t("error.cannotGetSegmentList") + cfg.url);
 			}
 			const segmentsUrls = segmentsInfo.segments.map(segment =>
-				new URL(segmentsBase + segment["uri"]).href
+				new URL(segment["uri"], segmentsBase).href
 			);
 			cfg.video = path.join(cfg.video, cfg.title);
 
 			const name = await downloadFile(cfg, segmentsUrls, options);
 			return [name, quality];
 		} catch (e) {
-			if (e.message) throw e;
+			if (e instanceof Error) throw e;
 			throw new Error(t("error.vkLoadError") + cfg.url);
 		}
 	},

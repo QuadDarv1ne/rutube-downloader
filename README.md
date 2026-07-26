@@ -31,7 +31,7 @@
 |------|-----------|
 | YouTube | `youtube.com/watch?v=...`, `youtu.be/...` |
 | RuTube | `rutube.ru/video/...` |
-| VK Video | `vkvideo.ru/video...`, `vk.com/video...` |
+| VK Video | `vkvideo.ru/video...`, `vkvideo.ru/live-...`, `vk.com/video...`, `vk.com/live-...` |
 | OK.ru | `ok.ru/video/...` |
 | Aser.pro | `aser.pro/content/.../hls/index.m3u8` |
 

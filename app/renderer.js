@@ -44,6 +44,8 @@ function applyConvertModeButton() {
 	btnConvert.textContent = isAudio
 		? tr("btn.extractAudio")
 		: tr("btn.convert");
+	convertFormat.style.display = isAudio ? "none" : "";
+	convertAudioFormat.style.display = isAudio ? "" : "none";
 }
 
 async function applyTranslations() {
