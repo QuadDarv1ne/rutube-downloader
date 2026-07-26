@@ -153,5 +153,11 @@
   "menu.help.github": "Открыть на GitHub",
   "menu.help.report": "Сообщить об ошибке",
 
-  "links.author": "Автор: Дуплей Максим Игоревич"
+  "links.author": "Автор: Дуплей Максим Игоревич",
+
+  "notification.done": "Загрузка завершена",
+  "notification.error": "Ошибка загрузки",
+
+  "tray.show": "Показать",
+  "tray.quit": "Выход"
 }

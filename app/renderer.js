@@ -34,6 +34,8 @@ const btnConvert = document.getElementById("btnConvert");
 // Language selector
 const langSelect = document.getElementById("langSelect");
 
+let isDownloading = false;
+
 // --- i18n ---
 function tr(key, fallback) {
 	return window.api.t(key, fallback);
@@ -68,6 +70,52 @@ async function initLocale() {
 	await window.api.setLocale(saved);
 	await applyTranslations();
 }
+
+// --- Settings persistence ---
+
+async function loadSettings() {
+	try {
+		const settings = await window.api.getSettings();
+		if (settings.lastFolder) {
+			dirEl.value = settings.lastFolder;
+			dirYoutube.value = settings.lastFolder;
+			convertDir.value = settings.lastFolder;
+		}
+		if (settings.defaultFormat) {
+			formatOther.value = settings.defaultFormat;
+			formatYoutube.value = settings.defaultFormat;
+		}
+		if (settings.defaultAudioFormat) {
+			audioFormatOther.value = settings.defaultAudioFormat;
+			audioFormatYoutube.value = settings.defaultAudioFormat;
+		}
+	} catch {}
+}
+
+async function saveCurrentSettings() {
+	await window.api.saveSettings({
+		lastFolder: dirEl.value.trim() || "",
+		defaultFormat: formatOther.value,
+		defaultAudioFormat: audioFormatOther.value,
+	});
+}
+
+// --- Clipboard auto-detect ---
+
+function checkClipboard() {
+	window.api.getClipboardUrl().then(url => {
+		if (url) {
+			const activePanel = document.querySelector(".panel.active");
+			if (activePanel && activePanel.id === "panelOther" && !urlOther.value.trim()) {
+				urlOther.value = url;
+			} else if (activePanel && activePanel.id === "panelYoutube" && !urlYoutube.value.trim()) {
+				urlYoutube.value = url;
+			}
+		}
+	});
+}
+
+// --- Locale ---
 
 langSelect.addEventListener("change", async () => {
 	const locale = langSelect.value;
@@ -116,20 +164,39 @@ convertMode.addEventListener("change", applyConvertModeButton);
 
 btnFolder.addEventListener("click", async () => {
 	const p = await window.api.selectFolder();
-	if (p) dirEl.value = p;
+	if (p) {
+		dirEl.value = p;
+		dirYoutube.value = p;
+		convertDir.value = p;
+		saveCurrentSettings();
+	}
 });
 btnFolderYoutube.addEventListener("click", async () => {
 	const p = await window.api.selectFolder();
-	if (p) dirYoutube.value = p;
+	if (p) {
+		dirYoutube.value = p;
+		dirEl.value = p;
+		convertDir.value = p;
+		saveCurrentSettings();
+	}
 });
 btnConvertFolder.addEventListener("click", async () => {
 	const p = await window.api.selectFolder();
-	if (p) convertDir.value = p;
+	if (p) {
+		convertDir.value = p;
+		dirEl.value = p;
+		dirYoutube.value = p;
+		saveCurrentSettings();
+	}
 });
 btnConvertFile.addEventListener("click", async () => {
 	const file = await window.api.selectFile();
 	if (file) convertSrc.value = file;
 });
+
+// Save settings on format change
+formatOther.addEventListener("change", saveCurrentSettings);
+audioFormatOther.addEventListener("change", saveCurrentSettings);
 
 window.api.onDownloadProgress(data => {
 	if (data.stage === "segments" && data.total > 0) {
@@ -150,10 +217,12 @@ window.api.onDownloadProgress(data => {
 		progressWrap.style.display = "none";
 		progressBar.style.width = "0%";
 		setStatus(tr("status.done") + "\n" + data.filePath, "success");
+		isDownloading = false;
 	} else if (data.stage === "error" && data.message) {
 		progressWrap.style.display = "none";
 		progressBar.style.width = "0%";
 		setStatus(data.message, "error");
+		isDownloading = false;
 	}
 });
 
@@ -166,6 +235,7 @@ async function doDownload(url, dir, quality, format, audioFormat) {
 		setStatus(tr("validation.selectFolder"), "error");
 		return;
 	}
+	isDownloading = true;
 	btnDownload.disabled = true;
 	btnDownloadYoutube.disabled = true;
 	btnConvert.disabled = true;
@@ -192,6 +262,7 @@ async function doDownload(url, dir, quality, format, audioFormat) {
 		progressBar.style.width = "0%";
 		setStatus(e.message || tr("status.error"), "error");
 	}
+	isDownloading = false;
 	btnDownload.disabled = false;
 	btnDownloadYoutube.disabled = false;
 	btnConvert.disabled = false;
@@ -235,6 +306,15 @@ async function doConvert(src, dir) {
 	btnDownloadYoutube.disabled = false;
 }
 
+function triggerDownload() {
+	const activePanel = document.querySelector(".panel.active");
+	if (activePanel && activePanel.id === "panelYoutube") {
+		btnDownloadYoutube.click();
+	} else {
+		btnDownload.click();
+	}
+}
+
 btnDownload.addEventListener("click", () => {
 	doDownload(
 		urlOther.value.trim(),
@@ -257,8 +337,33 @@ btnConvert.addEventListener("click", () => {
 	doConvert(convertSrc.value.trim(), convertDir.value.trim());
 });
 
-// Initialize locale on startup
+// --- Keyboard shortcuts ---
+
+document.addEventListener("keydown", e => {
+	// Ctrl+Enter / Cmd+Enter - start download
+	if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+		e.preventDefault();
+		if (!isDownloading) triggerDownload();
+	}
+	// Ctrl+V - paste URL from clipboard
+	if ((e.ctrlKey || e.metaKey) && e.key === "v") {
+		// Let native paste work, but also detect URL
+		setTimeout(checkClipboard, 100);
+	}
+	// Escape - cancel download
+	if (e.key === "Escape" && isDownloading) {
+		// Handled by main process abort
+	}
+});
+
+// --- Focus: auto-detect clipboard URL ---
+window.addEventListener("focus", () => {
+	setTimeout(checkClipboard, 200);
+});
+
+// --- Init ---
 initLocale();
+loadSettings();
 
 // Open external links in system browser
 document.addEventListener("click", e => {

@@ -153,5 +153,11 @@
   "menu.help.github": "在 GitHub 上打开",
   "menu.help.report": "报告错误",
 
-  "links.author": "作者: Дуплей Максим Игоревич"
+  "links.author": "作者: Дуплей Максим Игоревич",
+
+  "notification.done": "下载完成",
+  "notification.error": "下载错误",
+
+  "tray.show": "显示",
+  "tray.quit": "退出"
 }

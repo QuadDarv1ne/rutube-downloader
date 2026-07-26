@@ -153,5 +153,11 @@
   "menu.help.github": "Open on GitHub",
   "menu.help.report": "Report a Bug",
 
-  "links.author": "Author: Maxim I. Dupley"
+  "links.author": "Author: Maxim I. Dupley",
+
+  "notification.done": "Download complete",
+  "notification.error": "Download error",
+
+  "tray.show": "Show",
+  "tray.quit": "Quit"
 }

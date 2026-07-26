@@ -16,7 +16,7 @@ async function runDownload(url, outputDir, options = {}) {
 		root: outputDir,
 		video: outputDir,
 		title: undefined,
-		parallelNum: 5,
+		parallelNum: configure.downloadParallel || 5,
 		url,
 		manualVideoQuality: false,
 		quality: options.quality,

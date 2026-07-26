@@ -1,11 +1,11 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, Menu, shell, Tray, clipboard, Notification } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 const { runDownload } = require("../src/runDownload");
 const { convertFile, extractAudio } = require("../src/convert");
 const { isValidFormat, isValidAudioFormat } = require("../src/formats");
 const i18n = require("../src/i18n");
-const { configure } = require("../src/configure");
+const { configure, initSettings, saveSettings, getSettings } = require("../src/configure");
 
 let crashLogPath = "";
 
@@ -21,6 +21,71 @@ process.on("unhandledRejection", err => { logCrash("unhandledRejection", err); }
 let mainWindow = null;
 let activeDownload = null;
 let activeConvert = null;
+let tray = null;
+let isQuitting = false;
+
+// --- Supported URL patterns for clipboard detection ---
+const URL_PATTERNS = [
+	/^https?:\/\/(?:www\.)?(?:youtube\.com\/watch|youtu\.be\/)/,
+	/^https?:\/\/(?:www\.)?rutube\.ru\/video\//,
+	/^https?:\/\/(?:vk|vkvideo)\.(?:ru|com)\/(?:playlist\/.+)?(?:video|live-)/,
+	/^https?:\/\/(?:www\.)?ok\.ru\/video\//,
+	/^https?:\/\/aser\.pro\/content\//,
+];
+
+function isSupportedUrl(text) {
+	if (!text || typeof text !== "string") return false;
+	const trimmed = text.trim();
+	return URL_PATTERNS.some(p => p.test(trimmed));
+}
+
+function getClipboardUrl() {
+	const text = clipboard.readText("clipboard").trim();
+	return isSupportedUrl(text) ? text : null;
+}
+
+// --- System Tray ---
+
+function createTray() {
+	const iconPath = path.join(__dirname, "..", "bin", "icon.png");
+	let icon;
+	try {
+		if (fs.existsSync(iconPath)) {
+			icon = Tray ? new Tray(iconPath) : null;
+		}
+	} catch {}
+	if (!icon) return;
+
+	const contextMenu = Menu.buildFromTemplate([
+		{
+			label: i18n.t("tray.show") || "Показать",
+			click: () => {
+				if (mainWindow) {
+					mainWindow.show();
+					mainWindow.focus();
+				}
+			},
+		},
+		{ type: "separator" },
+		{
+			label: i18n.t("menu.file.exit") || "Выход",
+			click: () => {
+				isQuitting = true;
+				app.quit();
+			},
+		},
+	]);
+
+	icon.setToolTip(i18n.t("app.heading") || "Rutube Downloader");
+	icon.setContextMenu(contextMenu);
+	icon.on("double-click", () => {
+		if (mainWindow) {
+			mainWindow.show();
+			mainWindow.focus();
+		}
+	});
+	tray = icon;
+}
 
 // --- Application Menu ---
 
@@ -49,6 +114,7 @@ function buildMenu() {
 		checked: configure.downloadParallel === n,
 		click: () => {
 			configure.downloadParallel = n;
+			saveSettings();
 			buildMenu();
 		},
 	}));
@@ -60,7 +126,10 @@ function buildMenu() {
 				{
 					label: i18n.t("menu.file.exit"),
 					accelerator: "CmdOrCtrl+Q",
-					click: () => app.quit(),
+					click: () => {
+						isQuitting = true;
+						app.quit();
+					},
 				},
 			],
 		},
@@ -145,6 +214,12 @@ function createWindow() {
 		},
 	});
 	mainWindow.loadFile(path.join(__dirname, "index.html"));
+	mainWindow.on("close", (e) => {
+		if (!isQuitting) {
+			e.preventDefault();
+			mainWindow.hide();
+		}
+	});
 	mainWindow.on("closed", () => {
 		mainWindow = null;
 		if (activeDownload) {
@@ -162,12 +237,23 @@ app.disableHardwareAcceleration();
 
 app.whenReady().then(() => {
 	crashLogPath = path.join(app.getPath("userData"), "crash.log");
+	initSettings(app.getPath("userData"));
+	createTray();
 	buildMenu();
 	createWindow();
 });
-app.on("window-all-closed", () => app.quit());
+app.on("window-all-closed", () => {
+	if (process.platform !== "darwin") app.quit();
+});
 app.on("activate", () => {
-	if (BrowserWindow.getAllWindows().length === 0) createWindow();
+	if (mainWindow) {
+		mainWindow.show();
+	} else {
+		createWindow();
+	}
+});
+app.on("before-quit", () => {
+	isQuitting = true;
 });
 app.on("child-process-gone", (event, details) => {
 	logCrash(`child-process-gone (${details.type}, reason=${details.reason})`, details.error);
@@ -179,6 +265,21 @@ ipcMain.handle("open-external", (_, url) => {
 	shell.openExternal(url);
 });
 
+// Settings
+ipcMain.handle("get-settings", () => getSettings());
+ipcMain.handle("save-settings", (_, data) => {
+	if (typeof data.downloadParallel === "number") configure.downloadParallel = data.downloadParallel;
+	if (typeof data.lastFolder === "string") configure.lastFolder = data.lastFolder;
+	if (typeof data.defaultFormat === "string") configure.defaultFormat = data.defaultFormat;
+	if (typeof data.defaultAudioFormat === "string") configure.defaultAudioFormat = data.defaultAudioFormat;
+	saveSettings();
+	return getSettings();
+});
+
+// Clipboard
+ipcMain.handle("get-clipboard-url", () => getClipboardUrl());
+
+// Locale
 ipcMain.handle("get-locale", () => i18n.getLocale());
 ipcMain.handle("set-locale", (_, locale) => {
 	i18n.setLocale(locale);
@@ -194,6 +295,7 @@ ipcMain.on("t", (event, key, fallback) => {
 	event.returnValue = i18n.t(key, fallback);
 });
 
+// Folder / File pickers
 ipcMain.handle("select-folder", async (_, title) => {
 	try {
 		const { canceled, filePaths } = await dialog.showOpenDialog(
@@ -204,6 +306,8 @@ ipcMain.handle("select-folder", async (_, title) => {
 			}
 		);
 		if (canceled || !filePaths.length) return null;
+		configure.lastFolder = filePaths[0];
+		saveSettings();
 		return filePaths[0];
 	} catch (e) {
 		console.error(e);
@@ -239,6 +343,7 @@ ipcMain.handle("select-file", async (_, title, filters) => {
 	}
 });
 
+// Download
 ipcMain.handle(
 	"download",
 	async (_, { url, dir, quality, format, audioFormat }) => {
@@ -290,14 +395,17 @@ ipcMain.handle(
 					controller.signal
 				);
 				sendProgress({ stage: "done", filePath: audioPath });
+				showNotification(i18n.t("notification.done") || "Загрузка завершена", path.basename(audioPath));
 				return { ok: true, filePath: audioPath };
 			}
 			sendProgress({ stage: "done", filePath });
+			showNotification(i18n.t("notification.done") || "Загрузка завершена", path.basename(filePath));
 			return { ok: true, filePath };
 		} catch (e) {
 			if (controller.signal.aborted) {
 				return { ok: false, error: i18n.t("error.downloadCancelled") };
 			}
+			showNotification(i18n.t("notification.error") || "Ошибка загрузки", e.message);
 			return { ok: false, error: e.message };
 		} finally {
 			if (activeDownload === controller) activeDownload = null;
@@ -305,6 +413,15 @@ ipcMain.handle(
 	}
 );
 
+// Notifications
+function showNotification(title, body) {
+	if (!Notification.isSupported()) return;
+	try {
+		new Notification({ title, body }).show();
+	} catch {}
+}
+
+// Convert
 ipcMain.handle("convert", async (_, { src, dir, format }) => {
 	if (!src || !dir) throw new Error(i18n.t("error.specifySourceAndFolder"));
 	if (!isValidFormat(format)) {
@@ -323,17 +440,20 @@ ipcMain.handle("convert", async (_, { src, dir, format }) => {
 	try {
 		const filePath = await convertFile(src, dir, format, sendProgress, controller.signal);
 		sendProgress({ stage: "done", filePath });
+		showNotification(i18n.t("notification.done") || "Конвертация завершена", path.basename(filePath));
 		return { ok: true, filePath };
 	} catch (e) {
 		if (controller.signal.aborted) {
 			return { ok: false, error: i18n.t("error.cancelled") };
 		}
+		showNotification(i18n.t("notification.error") || "Ошибка конвертации", e.message);
 		return { ok: false, error: e.message };
 	} finally {
 		if (activeConvert === controller) activeConvert = null;
 	}
 });
 
+// Extract audio
 ipcMain.handle("extract-audio", async (_, { src, dir, format }) => {
 	if (!src || !dir) throw new Error(i18n.t("error.specifySourceAndFolder"));
 	if (!isValidAudioFormat(format)) {
@@ -352,11 +472,13 @@ ipcMain.handle("extract-audio", async (_, { src, dir, format }) => {
 	try {
 		const filePath = await extractAudio(src, dir, format, sendProgress, controller.signal);
 		sendProgress({ stage: "done", filePath });
+		showNotification(i18n.t("notification.done") || "Извлечение аудио завершено", path.basename(filePath));
 		return { ok: true, filePath };
 	} catch (e) {
 		if (controller.signal.aborted) {
 			return { ok: false, error: i18n.t("error.cancelled") };
 		}
+		showNotification(i18n.t("notification.error") || "Ошибка извлечения аудио", e.message);
 		return { ok: false, error: e.message };
 	} finally {
 		if (activeConvert === controller) activeConvert = null;
