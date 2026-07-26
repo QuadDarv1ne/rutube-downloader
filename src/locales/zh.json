@@ -151,5 +151,7 @@
   "menu.help.links": "链接",
   "menu.help.authorSite": "作者网站",
   "menu.help.github": "在 GitHub 上打开",
-  "menu.help.report": "报告错误"
+  "menu.help.report": "报告错误",
+
+  "links.author": "作者: Дуплей Максим Игоревич"
 }

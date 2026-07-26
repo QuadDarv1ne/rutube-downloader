@@ -259,3 +259,12 @@ btnConvert.addEventListener("click", () => {
 
 // Initialize locale on startup
 initLocale();
+
+// Open external links in system browser
+document.addEventListener("click", e => {
+	const link = e.target.closest("a[href]");
+	if (link && link.hostname && link.hostname !== location.hostname) {
+		e.preventDefault();
+		window.api.openExternal(link.href);
+	}
+});

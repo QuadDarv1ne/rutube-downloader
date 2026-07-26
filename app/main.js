@@ -175,6 +175,10 @@ app.on("child-process-gone", (event, details) => {
 
 // --- IPC ---
 
+ipcMain.handle("open-external", (_, url) => {
+	shell.openExternal(url);
+});
+
 ipcMain.handle("get-locale", () => i18n.getLocale());
 ipcMain.handle("set-locale", (_, locale) => {
 	i18n.setLocale(locale);

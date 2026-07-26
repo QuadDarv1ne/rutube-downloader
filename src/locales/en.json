@@ -151,5 +151,7 @@
   "menu.help.links": "Links",
   "menu.help.authorSite": "Author's Website",
   "menu.help.github": "Open on GitHub",
-  "menu.help.report": "Report a Bug"
+  "menu.help.report": "Report a Bug",
+
+  "links.author": "Author: Maxim I. Dupley"
 }

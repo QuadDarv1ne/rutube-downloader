@@ -151,5 +151,7 @@
   "menu.help.links": "Ссылки",
   "menu.help.authorSite": "Сайт автора",
   "menu.help.github": "Открыть на GitHub",
-  "menu.help.report": "Сообщить об ошибке"
+  "menu.help.report": "Сообщить об ошибке",
+
+  "links.author": "Автор: Дуплей Максим Игоревич"
 }

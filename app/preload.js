@@ -28,5 +28,6 @@ contextBridge.exposeInMainWorld("api", {
 	getLocale: () => ipcRenderer.invoke("get-locale"),
 	setLocale: (locale) => ipcRenderer.invoke("set-locale", locale),
 	getAvailableLocales: () => ipcRenderer.invoke("get-available-locales"),
+	openExternal: (url) => ipcRenderer.invoke("open-external", url),
 	t: (key, fallback) => ipcRenderer.sendSync("t", key, fallback),
 });
