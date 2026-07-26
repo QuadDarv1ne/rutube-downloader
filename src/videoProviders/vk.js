@@ -1,8 +1,10 @@
 const path = require("node:path");
+const _colors = require("ansi-colors");
 const { getManifest } = require("../m3u8Utils");
 const { configure } = require("../configure");
 const { selectVideoQuality } = require("../dialogue");
-const { downloadFile } = require("../downloadFile");
+const { downloadFile, downloadSegment, mergeAndConvert, delay } = require("../downloadFile");
+const { createDir, deleteFiles } = require("../fsUtils");
 const { sanitizeTitle } = require("./titleUtils");
 const { fetchWithTimeout } = require("./fetchTimeout");
 const { t } = require("../i18n");
@@ -56,6 +58,140 @@ const encodeCookies = (c, domain) =>
 		.join("; ");
 
 const browserHeaders = configure.browserHeaders;
+
+/**
+ * Получаем сегменты из манифеста VK
+ */
+async function fetchVkSegments(hlsRequestUrl, options) {
+	const hls = await getManifest(hlsRequestUrl, t("error.cannotGetVideo"), options);
+	const playlists = hls["playlists"];
+	if (!playlists || !playlists.length) return null;
+	
+	const [playlist] = await selectVideoQuality({ quality: "best" }, playlists);
+	const myURL = new URL(hlsRequestUrl);
+	const segmentsBase = new URL(playlist, myURL).href;
+	
+	const segmentsInfo = await getManifest(segmentsBase, t("error.cannotGetSegments"), options);
+	if (!segmentsInfo.segments || !segmentsInfo.segments.length) return null;
+	
+	return {
+		segments: segmentsInfo.segments.map(segment => new URL(segment["uri"], segmentsBase).href),
+		base: segmentsBase
+	};
+}
+
+/**
+ * Стриминговое скачивание VK Live — скачивает сегменты сразу при обнаружении
+ */
+async function downloadLiveStream(hlsRequestUrl, cfg, options) {
+	const hls = await getManifest(hlsRequestUrl, t("error.cannotGetVideo"), options);
+	const playlists = hls["playlists"];
+	if (!playlists || !playlists.length) {
+		throw new Error(t("error.cannotGetVideo") + cfg.url);
+	}
+
+	const [playlist] = await selectVideoQuality({ quality: "best" }, playlists);
+	const myURL = new URL(hlsRequestUrl);
+	const segmentsBase = new URL(playlist, myURL).href;
+
+	cfg.video = path.join(cfg.video, cfg.title);
+	await createDir(cfg.video);
+	await deleteFiles(/^segment-.*\.\w+$/, cfg.video);
+
+	const knownSegments = new Set();
+	const downloadedFiles = [];
+	let segmentCounter = 0;
+	let staleCount = 0;
+	const maxStaleChecks = 10; // 10 × 500ms = 5s without new segments = stream ended
+	const refreshInterval = 500; // 500ms between manifest refreshes
+	const maxParallel = cfg.parallelNum || 5;
+
+	process.title = t("cli.download") + " " + cfg.title;
+	console.log("\u00A0");
+	console.log(
+		t("cli.download").padStart(configure.padText, " "),
+		_colors.yellowBright(cfg.title),
+		"\n"
+	);
+	console.log(`[VK Live] Streaming — refreshing every ${refreshInterval}ms, ${maxParallel} parallel downloads`);
+
+	while (staleCount < maxStaleChecks) {
+		let segmentsInfo;
+		try {
+			segmentsInfo = await getManifest(segmentsBase, t("error.cannotGetSegments"), options);
+		} catch (e) {
+			staleCount++;
+			console.log(`[VK Live] Manifest fetch failed (stale #${staleCount}/${maxStaleChecks}): ${e.message?.substring(0, 120)}`);
+			await delay(refreshInterval);
+			continue;
+		}
+
+		if (!segmentsInfo.segments || !segmentsInfo.segments.length) {
+			staleCount++;
+			console.log(`[VK Live] Empty manifest (stale #${staleCount}/${maxStaleChecks})`);
+			await delay(refreshInterval);
+			continue;
+		}
+
+		const allSegUrls = segmentsInfo.segments.map(s => new URL(s["uri"], segmentsBase).href);
+		const newSegUrls = allSegUrls.filter(url => !knownSegments.has(url));
+
+		if (newSegUrls.length > 0) {
+			staleCount = 0;
+
+			// Download new segments immediately in parallel batches
+			for (let i = 0; i < newSegUrls.length; i += maxParallel) {
+				const batch = newSegUrls.slice(i, i + maxParallel);
+				const batchStart = segmentCounter + 1;
+
+				await Promise.allSettled(batch.map((segUrl, j) => {
+					const idx = batchStart + j;
+					const ext = path.extname(segUrl.split("?")[0]) || ".ts";
+					const filePath = path.join(cfg.video, "segment-" + `${idx}`.padStart(10, "0") + ext);
+					knownSegments.add(segUrl);
+					return downloadSegment(segUrl, filePath, options, idx).then(err => {
+						if (!err) {
+							downloadedFiles.push(filePath);
+						} else {
+							console.log(_colors.yellowBright(`[VK Live] Segment #${idx} failed: ${err.message}`));
+						}
+					});
+				}));
+
+				segmentCounter += batch.length;
+			}
+
+			console.log(`[VK Live] ${downloadedFiles.length}/${segmentCounter} segments downloaded (${newSegUrls.length} new)`);
+		} else {
+			staleCount++;
+			if (staleCount >= maxStaleChecks) {
+				console.log(`[VK Live] Stream ended (${maxStaleChecks} consecutive stale checks)`);
+			}
+		}
+
+		await delay(refreshInterval);
+	}
+
+	if (!downloadedFiles.length) {
+		throw new Error(t("error.cannotGetSegmentList") + cfg.url);
+	}
+
+	// Sort files by segment number to ensure correct order
+	downloadedFiles.sort();
+
+	console.log(`[VK Live] All ${downloadedFiles.length} segments downloaded, merging...`);
+
+	if (typeof cfg.onProgress === "function")
+		cfg.onProgress({ stage: "merge" });
+
+	const videoFileName = await mergeAndConvert(cfg, downloadedFiles, cfg.title);
+
+	console.log("\u00A0");
+	console.log(_colors.yellowBright(t("cli.done")));
+	console.log("".padEnd(configure.padLine, "_"));
+
+	return [videoFileName, null];
+}
 
 module.exports = {
 	mayUse: url => regexVk.test(url),
@@ -184,54 +320,30 @@ module.exports = {
 				urlObj.searchParams.set('live_no_repeat', '1');
 				hlsRequestUrl = urlObj.toString();
 			}
-			const hls = await getManifest(
-				hlsRequestUrl,
-				t("error.cannotGetVideo"),
-				options
-			);
 
-			const playlists = hls["playlists"];
-			if (!playlists || !playlists.length) {
-				throw new Error(t("error.cannotGetVideoQualities") + cfg.url);
+		// VK Live streams have dynamic HLS — segments are removed from manifest as they age
+			// Download segments immediately as they appear, with fast manifest refresh
+			if (isLive) {
+				const result = await downloadLiveStream(hlsRequestUrl, cfg, options);
+				return result;
 			}
-			const [playlist, quality] = await selectVideoQuality(cfg, playlists);
-
-			const myURL = new URL(hlsUrl);
-			const segmentsBase = new URL(playlist, myURL).href;
-
-			const segmentsInfo = await getManifest(
-				segmentsBase,
-				t("error.cannotGetSegments"),
-				options
-			);
-
-			if (!segmentsInfo.segments || !segmentsInfo.segments.length) {
+			
+			// VOD: collect all segments, then download
+			let segmentsUrls = [];
+			console.log(`[VK] Collecting segments from manifest...`);
+			
+			const result = await fetchVkSegments(hlsRequestUrl, options);
+			if (!result || !result.segments.length) {
 				throw new Error(t("error.cannotGetSegmentList") + cfg.url);
 			}
-			const segmentsUrls = segmentsInfo.segments.map(segment =>
-				new URL(segment["uri"], segmentsBase).href
-			);
-			// Log segment count for debugging
-			console.log(`[VK] Total segments in manifest: ${segmentsUrls.length}`);
-			console.log(`[VK] First segment: ${segmentsUrls[0]}`);
-			console.log(`[VK] Last segment: ${segmentsUrls[segmentsUrls.length - 1]}`);
+			segmentsUrls = result.segments;
 			
-			// VK Live streams have dynamic HLS - segments are removed from manifest as they age
-			// We can only download what's currently available in the manifest
-			if (isLive && segmentsUrls.length < 300) {
-				console.log(`[VK Live] WARNING: Short manifest (${segmentsUrls.length} segments).`);
-				console.log(`[VK Live] VK removes old segments from live streams - you can only download what's available.`);
-				console.log(`[VK Live] Try downloading closer to the start of the stream.`);
-			}
+			console.log(`[VK] Total segments to download: ${segmentsUrls.length}`);
 			
-			// VK has strict rate limits — reduce parallelism
-			if (!cfg.parallelNum || cfg.parallelNum > 3) {
-				cfg.parallelNum = 3;
-			}
 			cfg.video = path.join(cfg.video, cfg.title);
 
 			const name = await downloadFile(cfg, segmentsUrls, options);
-			return [name, quality];
+			return [name, null];
 		} catch (e) {
 			if (e instanceof Error) throw e;
 			throw new Error(t("error.vkLoadError") + cfg.url);

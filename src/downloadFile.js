@@ -23,9 +23,69 @@ const existsCount = list =>
 const joinNames = list => ({ filename: list.join(", ") });
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+exports.delay = delay;
 
 const MAX_SEGMENT_RETRIES = 5;
 const SEGMENT_TIMEOUT = 120000;
+
+exports.mergeAndConvert = async function (cfg, segmentFiles, title) {
+	const saveTitle = title || cfg.title;
+	const ext = path.extname(segmentFiles[0].split("?")[0]) || ".ts";
+
+	console.log("\u00A0");
+	console.log(_colors.yellowBright(t("cli.videoProcessing")));
+	console.log(
+		"\n",
+		t("cli.combining"),
+		_colors.yellowBright(`${segmentFiles.length}`),
+		t("cli.filesInto"),
+		_colors.yellowBright(`${saveTitle}${ext}`)
+	);
+	console.log(t("cli.pleaseWait").padStart(configure.padText, " "), "\n");
+	await splitFile.mergeFiles(
+		segmentFiles,
+		path.join(cfg.video, `${saveTitle}${ext}`)
+	);
+	console.log(
+		t("cli.deleteFiles").padStart(configure.padText, " "),
+		_colors.yellowBright(`${segmentFiles.length}`),
+		"\n"
+	);
+	await deleteFiles(/^segment-.*\.\w+$/, cfg.video);
+
+	const outExt = getExt(cfg.format || "mp4");
+	const videoFileName = `${saveTitle}.${outExt}`;
+	const videoFilePath = path.join(cfg.video, videoFileName);
+	await deleteFile(videoFilePath);
+	if (typeof cfg.onProgress === "function")
+		cfg.onProgress({ stage: "convert" });
+	console.log(
+		t("cli.converting").padStart(configure.padText, " "),
+		_colors.yellowBright(`${saveTitle}${ext}`)
+	);
+	console.log(
+		t("cli.to").padStart(configure.padText, " "),
+		_colors.yellowBright(videoFileName)
+	);
+	console.log(t("cli.pleaseWait").padStart(configure.padText, " "));
+	console.log("\u00A0");
+	const segmentsVideoFilePath = path.join(cfg.video, `${saveTitle}${ext}`);
+	const ffmpegOpts = {};
+	if (outExt === "mp4" || outExt === "mov") {
+		ffmpegOpts.bsf = "aac_adtstoasc";
+	}
+	try {
+		await execFFmpeg(segmentsVideoFilePath, videoFilePath, ffmpegOpts);
+		await deleteFile(segmentsVideoFilePath);
+	} catch (e) {
+		console.log(_colors.redBright(t("ffmpeg.error.launch") + e.message));
+		if (typeof cfg.onProgress === "function") {
+			cfg.onProgress({ stage: "error", message: t("ffmpeg.error.launch") + e.message });
+		}
+		throw e;
+	}
+	return videoFileName;
+};
 
 async function downloadSegment(segmentUrl, segmentFilePath, options, segmentIndex) {
 	let lastError;
@@ -62,6 +122,7 @@ async function downloadSegment(segmentUrl, segmentFilePath, options, segmentInde
 	}
 	return lastError;
 }
+exports.downloadSegment = downloadSegment;
 
 exports.downloadFile = async function (cfg, segments, options) {
 	await createDir(cfg.video);
@@ -106,11 +167,6 @@ exports.downloadFile = async function (cfg, segments, options) {
 					total: segments.length,
 				});
 			}
-			// Small delay between segment starts to avoid rate limiting
-			if (segmentIndex % cfg.parallelNum === 0) {
-				await delay(200);
-			}
-
 			const error = await downloadSegment(
 				segmentUrl,
 				segmentFilePath,
@@ -143,13 +199,11 @@ exports.downloadFile = async function (cfg, segments, options) {
 					total: segments.length,
 				});
 			}
-			await delay(50);
 		}
 	);
 
 	if (!progressStopped) {
 		progress.update(existsCount(arrFiles), { filename: " " });
-		await delay(1000);
 		progress.stop();
 	}
 
@@ -157,60 +211,8 @@ exports.downloadFile = async function (cfg, segments, options) {
 		cfg.onProgress({ stage: "merge" });
 
 	const saveTitle = cfg.title;
-	const ext = path.extname(segments[0].split("?")[0]) || ".ts";
 	const filesToMerge = arrFiles.filter(Boolean);
-	console.log("\u00A0");
-	console.log(_colors.yellowBright(t("cli.videoProcessing")));
-	console.log(
-		"\n",
-		t("cli.combining"),
-		_colors.yellowBright(`${filesToMerge.length}`),
-		t("cli.filesInto"),
-		_colors.yellowBright(`${saveTitle}${ext}`)
-	);
-	console.log(t("cli.pleaseWait").padStart(configure.padText, " "), "\n");
-	await splitFile.mergeFiles(
-		filesToMerge,
-		path.join(cfg.video, `${saveTitle}${ext}`)
-	);
-	console.log(
-		t("cli.deleteFiles").padStart(configure.padText, " "),
-		_colors.yellowBright(`${filesToMerge.length}`),
-		"\n"
-	);
-	await deleteFiles(/^segment-.*\.\w+$/, cfg.video);
-
-	const outExt = getExt(cfg.format || "mp4");
-	const videoFileName = `${saveTitle}.${outExt}`;
-	const videoFilePath = path.join(cfg.video, videoFileName);
-	await deleteFile(videoFilePath);
-	if (typeof cfg.onProgress === "function")
-		cfg.onProgress({ stage: "convert" });
-	console.log(
-		t("cli.converting").padStart(configure.padText, " "),
-		_colors.yellowBright(`${saveTitle}${ext}`)
-	);
-	console.log(
-		t("cli.to").padStart(configure.padText, " "),
-		_colors.yellowBright(videoFileName)
-	);
-	console.log(t("cli.pleaseWait").padStart(configure.padText, " "));
-	console.log("\u00A0");
-	const segmentsVideoFilePath = path.join(cfg.video, `${saveTitle}${ext}`);
-	const ffmpegOpts = {};
-	if (outExt === "mp4" || outExt === "mov") {
-		ffmpegOpts.bsf = "aac_adtstoasc";
-	}
-	try {
-		await execFFmpeg(segmentsVideoFilePath, videoFilePath, ffmpegOpts);
-		await deleteFile(segmentsVideoFilePath);
-	} catch (e) {
-		console.log(_colors.redBright(t("ffmpeg.error.launch") + e.message));
-		if (typeof cfg.onProgress === "function") {
-			cfg.onProgress({ stage: "error", message: t("ffmpeg.error.launch") + e.message });
-		}
-		throw e;
-	}
+	const videoFileName = await exports.mergeAndConvert(cfg, filesToMerge, saveTitle);
 	await delay(500);
 	console.log(_colors.yellowBright(t("cli.done")));
 	console.log("".padEnd(configure.padLine, "_"));

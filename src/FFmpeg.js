@@ -53,6 +53,8 @@ exports.execFFmpeg = async (input, output, options = {}) => {
 
 	if (options.bsf) args.push("-bsf:a", options.bsf);
 	if (options.outputFormat) args.push("-f", options.outputFormat);
+	args.push("-max_muxing_queue_size", "4096");
+	args.push("-movflags", "+faststart");
 
 	args.push(output);
 	if (isHideBannerSupported()) args.unshift("-hide_banner");
