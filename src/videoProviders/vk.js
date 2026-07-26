@@ -211,20 +211,23 @@ module.exports = {
 			const segmentsUrls = segmentsInfo.segments.map(segment =>
 				new URL(segment["uri"], segmentsBase).href
 			);
+			// Log segment count for debugging
+			console.log(`[VK] Total segments in manifest: ${segmentsUrls.length}`);
+			console.log(`[VK] First segment: ${segmentsUrls[0]}`);
+			console.log(`[VK] Last segment: ${segmentsUrls[segmentsUrls.length - 1]}`);
+			
+			// VK Live streams have dynamic HLS - segments are removed from manifest as they age
+			// We can only download what's currently available in the manifest
+			if (isLive && segmentsUrls.length < 300) {
+				console.log(`[VK Live] WARNING: Short manifest (${segmentsUrls.length} segments).`);
+				console.log(`[VK Live] VK removes old segments from live streams - you can only download what's available.`);
+				console.log(`[VK Live] Try downloading closer to the start of the stream.`);
+			}
+			
 			// VK has strict rate limits — reduce parallelism
 			if (!cfg.parallelNum || cfg.parallelNum > 3) {
 				cfg.parallelNum = 3;
 			}
-			// For live streams, limit to last 2 hours to avoid downloading too many segments
-			if (isLive && segmentsUrls.length > 2400) {
-				// 2400 segments * ~5 seconds = ~167 minutes (2.7 hours)
-				// Trim to last 2 hours (1440 segments at 5s each)
-				const maxSegments = 1440;
-				console.log(`[VK Live] Limiting to last ${maxSegments} segments (~${Math.floor(maxSegments * 5 / 60)}min)`);
-				segmentsUrls.splice(0, segmentsUrls.length - maxSegments);
-			}
-			// Log segment count for debugging
-			console.log(`[VK] Total segments to download: ${segmentsUrls.length}`);
 			cfg.video = path.join(cfg.video, cfg.title);
 
 			const name = await downloadFile(cfg, segmentsUrls, options);
