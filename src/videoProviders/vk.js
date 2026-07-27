@@ -22,6 +22,10 @@ const { t } = require("../i18n");
  * https://vk.ru/video-18255722_456244249
  * https://vkvideo.ru/video-18255722_456244249
  *
+ * Короткие видео (клипы)
+ * https://vk.com/clip30014565_456240946
+ * https://vkvideo.ru/clip-30014565_456240946
+ *
  * Прямые трансляции (live)
  * https://vkvideo.ru/live-183207497_456242848
  * https://vk.com/live-183207497_456242848
@@ -29,8 +33,45 @@ const { t } = require("../i18n");
  * Поддержка ссылки с плейлиста. Пример:
  * https://vkvideo.ru/playlist/62764098_2/video62764098_456239055
  *
+ * Ссылки с z-параметром (из ленты, поиска)
+ * https://vk.com/video?z=video-387766_456242764
+ * https://vk.com/feed?z=video-43215063_166094326
+ *
+ * Embed URL
+ * https://vk.com/video_ext.php?oid=-22822305&id=456242110
+ * https://vkvideo.ru/video_ext.php?oid=646754736&id=456239022
+ *
+ * Поддомены
+ * https://m.vk.com/video-123456_789012
+ * https://new.vk.com/video-123456_789012
+ * https://vksport.vkvideo.ru/video-124096712_456240773
+ *
  */
-const regexVk = /^https?:\/\/(?:vk|vkvideo)\.(?:ru|com)\/(?:playlist\/.+)?(?:video|live-)(-?\d+_\d+)/;
+const regexVkStandard = /^https?:\/\/(?:(?:[a-z]+\.)?vk(?:video)?\.(?:ru|com))\/(?:playlist\/[^/]+\/)?(?:video|live-|clip)(-?\d+_\d+)/;
+const regexVkZParam = /^https?:\/\/(?:(?:[a-z]+\.)?vk(?:video)?\.(?:ru|com))\/(?:.*?[?&]z=)(?:video|clip)(-?\d+_\d+)/;
+const regexVkEmbed = /^https?:\/\/(?:(?:[a-z]+\.)?vk(?:video)?\.(?:ru|com))\/video_ext\.php\?/;
+const regexVkChannel = /^https?:\/\/(?:(?:[a-z]+\.)?vk(?:video)?\.(?:ru|com))\/(?:(?:video\/)?@[\w.\-]+(?:\/\w+)?)$/;
+
+function extractVideoId(url) {
+	let m;
+	if ((m = regexVkStandard.exec(url))) return m[1];
+	if ((m = regexVkZParam.exec(url))) return m[1];
+	if (regexVkEmbed.test(url)) {
+		const u = new URL(url);
+		const oid = u.searchParams.get("oid");
+		const id = u.searchParams.get("id");
+		if (oid && id) return `${oid}_${id}`;
+	}
+	return null;
+}
+
+function isChannelUrl(url) {
+	return regexVkChannel.test(url);
+}
+
+function isLiveUrl(url) {
+	return /\/live-/.test(url) && !/video_ext\.php/.test(url);
+}
 
 const extractCookies = function(setCookie, cookies = {}, domain) {
 	if (!setCookie || !Array.isArray(setCookie)) return cookies;
@@ -122,9 +163,16 @@ async function downloadLiveStream(hlsRequestUrl, cfg, options) {
 	let liveProgressDone = false;
 	let totalBytes = 0;
 
+	const signal = cfg.signal;
+	if (signal?.aborted) throw new Error(t("error.downloadCancelled"));
+
 	console.log(`[VK Live] Streaming — refreshing every ${refreshInterval}ms, ${maxParallel} parallel downloads`);
 
 	while (staleCount < maxStaleChecks) {
+		if (signal?.aborted) {
+			console.log(`[VK Live] Download cancelled by user`);
+			break;
+		}
 		let segmentsInfo;
 		try {
 			segmentsInfo = await getManifest(segmentsBase, t("error.cannotGetSegments"), options);
@@ -157,9 +205,9 @@ async function downloadLiveStream(hlsRequestUrl, cfg, options) {
 					const idx = batchStart + j;
 					const ext = path.extname(segUrl.split("?")[0]) || ".ts";
 					const filePath = path.join(cfg.video, "segment-" + `${idx}`.padStart(10, "0") + ext);
-					knownSegments.add(segUrl);
-					return downloadSegment(segUrl, filePath, options, idx).then(err => {
+					return downloadSegment(segUrl, filePath, options, idx, signal).then(err => {
 						if (!err) {
+							knownSegments.add(segUrl);
 							downloadedFiles.push(filePath);
 							try { totalBytes += fs.statSync(filePath).size; } catch {}
 						} else {
@@ -220,7 +268,7 @@ async function downloadLiveStream(hlsRequestUrl, cfg, options) {
 }
 
 module.exports = {
-	mayUse: url => regexVk.test(url),
+	mayUse: url => regexVkStandard.test(url) || regexVkZParam.test(url) || regexVkEmbed.test(url) || regexVkChannel.test(url),
 
 	loadVideo: async cfg => {
 		try {
@@ -284,16 +332,29 @@ module.exports = {
 				".vkvideo.ru"
 			);
 
-			const m = regexVk.exec(cfg.url);
-			if (!m) {
+			// For channel URLs (@channel), the video ID comes from the redirect target
+			const resolvedUrl = isChannelUrl(cfg.url) ? location3 : cfg.url;
+			const videoId = extractVideoId(resolvedUrl);
+			if (!videoId) {
 				throw new Error(t("error.cannotParseUrl") + cfg.url);
 			}
 			// For live- URLs the owner ID must be sent with a leading minus
-			const isLive = /\/live-/.test(cfg.url);
-			const videoId = isLive && m[1][0] !== "-" ? "-" + m[1] : m[1];
+			const isLive = isLiveUrl(resolvedUrl);
+			const finalId = isLive && videoId[0] !== "-" ? "-" + videoId : videoId;
+
+			// Extract list parameter from URL if present
+			let listParam = "";
+			try {
+				const urlObj = new URL(cfg.url);
+				listParam = urlObj.searchParams.get("list") || "";
+				if (listParam) {
+					listParam = `&list=${encodeURIComponent(listParam)}`;
+				}
+			} catch {}
+
 			const body =
 				"al=1&autoplay=1&claim=&force_no_repeat=true&is_video_page=true&list=&module=direct&show_next=1&video=" +
-				videoId + (isLive ? "&live=1" : "");
+				finalId + (isLive ? "&live=1" : "") + listParam;
 
 			const headers = {
 				...browserHeaders,
@@ -330,45 +391,47 @@ module.exports = {
 				);
 			}
 
-			const hlsUrl = json.payload?.[1]?.[4]?.player?.params?.[0]?.hls
-				|| json.payload?.[1]?.[4]?.player?.params?.[0]?.hls_ondemand
-				|| json.payload?.[1]?.[4]?.player?.params?.[0]?.hls_live
-				|| json.payload?.[1]?.[4]?.player?.params?.[0]?.hls_live_dash;
+			const playerParams = json.payload?.[1]?.[4]?.player?.params?.[0];
+			const hlsUrl = playerParams?.hls
+				|| playerParams?.hls_ondemand
+				|| playerParams?.hls_live
+				|| playerParams?.hls_live_dash;
 			if (!hlsUrl) {
 				throw new Error(t("error.cannotGetHlsLink") + cfg.url);
 			}
+
+			// Auto-detect live: URL has /live- prefix OR API returned a live-specific HLS field
+			const isLiveStream = isLive || !!(playerParams?.hls_live || playerParams?.hls_live_dash);
+
 			// For live streams, add live parameter and disable repeat
 			let hlsRequestUrl = hlsUrl;
-			if (isLive) {
-				// Add live parameter and disable repeat for live streams
+			if (isLiveStream) {
 				const urlObj = new URL(hlsUrl);
 				urlObj.searchParams.set('live', '1');
 				urlObj.searchParams.set('live_no_repeat', '1');
 				hlsRequestUrl = urlObj.toString();
 			}
 
-		// VK Live streams have dynamic HLS — segments are removed from manifest as they age
-			// Download segments immediately as they appear, with fast manifest refresh
-			if (isLive) {
+			// Live streams have dynamic HLS — segments are removed from manifest as they age
+			if (isLiveStream) {
+				console.log(`[VK] Detected live stream, switching to streaming download mode`);
 				const result = await downloadLiveStream(hlsRequestUrl, cfg, options);
 				return result;
 			}
-			
+
 			// VOD: collect all segments, then download
-			let segmentsUrls = [];
 			console.log(`[VK] Collecting segments from manifest...`);
-			
+
 			const result = await fetchVkSegments(hlsRequestUrl, options);
 			if (!result || !result.segments.length) {
 				throw new Error(t("error.cannotGetSegmentList") + cfg.url);
 			}
-			segmentsUrls = result.segments;
-			
-			console.log(`[VK] Total segments to download: ${segmentsUrls.length}`);
-			
+
+			console.log(`[VK] Total segments to download: ${result.segments.length}`);
+
 			cfg.video = path.join(cfg.video, cfg.title);
 
-			const name = await downloadFile(cfg, segmentsUrls, options);
+			const name = await downloadFile(cfg, result.segments, options);
 			return [name, null];
 		} catch (e) {
 			if (e instanceof Error) throw e;

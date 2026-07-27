@@ -61,8 +61,7 @@ module.exports = {
 			throw new Error(t("error.cannotGetVideoQualities") + cfg.url);
 		}
 		const [m3u8, quality] = await selectVideoQuality(cfg, playlists);
-		const urlPrefix = hlsUrl.protocol + "//" + hlsUrl.host;
-		const segmentsUrl = urlPrefix + m3u8;
+		const segmentsUrl = new URL(m3u8, hlsUrl).href;
 		const segmentsInfo = await getManifest(
 			segmentsUrl,
 			t("error.cannotGetSegments")

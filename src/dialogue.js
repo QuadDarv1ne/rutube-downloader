@@ -87,7 +87,7 @@ module.exports = {
 
 		return new Promise((resolve, reject) => {
 			const rl = getRL();
-			rl.on("close", () => reject(new Error(t("error.downloadCancelled"))));
+			rl.once("close", () => reject(new Error(t("error.downloadCancelled"))));
 			rl.question("", answer => {
 				let arrays = [];
 				const index = Number.parseInt(answer);

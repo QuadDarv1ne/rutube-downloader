@@ -84,6 +84,10 @@
   "error.cannotSaveVideo": "无法保存视频",
   "error.cannotExtractVideoData": "无法提取视频数据: ",
   "error.hlsNotFound": "未找到 HLS 链接: ",
+  "error.vkLiveLoadError": "VK Live: 加载视频出错 ",
+  "error.vkLiveNoPlayerUrls": "无法在页面中找到视频数据",
+  "error.vkLiveNoRecords": "该频道没有找到录像",
+  "error.vkLiveLiveStreamNotSupported": "暂不支持下载直播流。直播结束后录像将可用。",
 
   "youtube.fetchingInfo": "正在获取视频信息...",
   "youtube.slowHint": "长时间无响应。很可能需要 VPN——没有 VPN 视频无法下载。",

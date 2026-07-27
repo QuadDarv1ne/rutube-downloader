@@ -7,7 +7,7 @@ const { fetchWithTimeout } = require("./fetchTimeout");
 const { configure } = require("../configure");
 const { t } = require("../i18n");
 
-const regex_rutube = /^https?:\/\/rutube\.(?:ru|com)\/video\/(private\/)?(\w+)/;
+const regex_rutube = /^https?:\/\/(?:www\.)?rutube\.(?:ru|com)\/video\/(private\/)?(\w+)/;
 // https://rutube.ru/video/private/3a16563c8168f75359cd099f76ff548e/?p=jXdLqNoqk4MzoCLAGH3-sw
 const browserHeaders = configure.browserHeaders;
 
@@ -78,7 +78,7 @@ module.exports = {
 			throw new Error(t("error.cannotGetSegmentList") + cfg.url);
 		}
 		const segmentsUrls = segmentsInfo.segments.map(
-			segment => urlPrefix + segment["uri"]
+			segment => new URL(segment["uri"], urlPrefix).href
 		);
 		cfg.video = path.join(cfg.video, cfg.title);
 		const options = {

@@ -1,17 +1,37 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu, shell, Tray, clipboard, Notification, nativeImage } = require("electron");
+const {
+	app,
+	BrowserWindow,
+	ipcMain,
+	dialog,
+	Menu,
+	shell,
+	Tray,
+	clipboard,
+	Notification,
+	nativeImage,
+} = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 const { runDownload } = require("../src/runDownload");
 const { convertFile, extractAudio } = require("../src/convert");
 const { isValidFormat, isValidAudioFormat } = require("../src/formats");
 const i18n = require("../src/i18n");
-const { configure, initSettings, saveSettings, getSettings } = require("../src/configure");
+const {
+	configure,
+	initSettings,
+	saveSettings,
+	getSettings,
+} = require("../src/configure");
 
 let crashLogPath = "";
 
 function logCrash(label, err) {
-	const msg = `[${new Date().toISOString()}] ${label}: ${err?.message || err}\n${err?.stack || ""}\n\n`;
-	try { fs.appendFileSync(crashLogPath, msg); } catch {}
+	const msg = `[${new Date().toISOString()}] ${label}: ${
+		err?.message || err
+	}\n${err?.stack || ""}\n\n`;
+	try {
+		fs.appendFileSync(crashLogPath, msg);
+	} catch {}
 	console.error(msg);
 }
 
@@ -33,9 +53,13 @@ let isQuitting = false;
 const URL_PATTERNS = [
 	/^https?:\/\/(?:www\.)?(?:youtube\.com\/watch|youtu\.be\/)/,
 	/^https?:\/\/(?:www\.)?rutube\.ru\/video\//,
-	/^https?:\/\/(?:vk|vkvideo)\.(?:ru|com)\/(?:playlist\/.+)?(?:video|live-)/,
+	/^https?:\/\/(?:(?:[a-z]+\.)?vk(?:video)?\.(?:ru|com))\/(?:playlist\/[^/]+\/)?(?:video|live-|clip)/,
+	/^https?:\/\/(?:(?:[a-z]+\.)?vk(?:video)?\.(?:ru|com))\/(?:.*?\?.*?z=)(?:video|clip)/,
+	/^https?:\/\/(?:(?:[a-z]+\.)?vk(?:video)?\.(?:ru|com))\/video_ext\.php\?/,
+	/^https?:\/\/(?:(?:[a-z]+\.)?vk(?:video)?\.(?:ru|com))\/(?:(?:video\/)?@[\w.\-]+(?:\/\w+)?)$/,
 	/^https?:\/\/(?:www\.)?ok\.ru\/(?:video|videoembed)\//,
-	/^https?:\/\/aser\.pro\/content\//,
+	/^https?:\/\/(?:www\.)?aser\.pro\/content\//,
+	/^https?:\/\/(?:www\.)?(?:live\.vkvideo\.ru|live\.vkplay\.ru|vkplay\.live)\/(?:[^/]+\/record\/|[^/]+$)/,
 ];
 
 function isSupportedUrl(text) {
@@ -61,13 +85,16 @@ function createTray() {
 			// Create a simple 16x16 blue circle icon
 			const size = 16;
 			const canvas = Buffer.alloc(size * size * 4);
-			const cx = size / 2, cy = size / 2, r = size / 2 - 1;
+			const cx = size / 2,
+				cy = size / 2,
+				r = size / 2 - 1;
 			for (let y = 0; y < size; y++) {
 				for (let x = 0; x < size; x++) {
-					const dx = x - cx, dy = y - cy;
+					const dx = x - cx,
+						dy = y - cy;
 					const idx = (y * size + x) * 4;
 					if (dx * dx + dy * dy <= r * r) {
-						canvas[idx] = 13;   // R
+						canvas[idx] = 13; // R
 						canvas[idx + 1] = 110; // G
 						canvas[idx + 2] = 253; // B
 						canvas[idx + 3] = 255; // A
@@ -76,7 +103,10 @@ function createTray() {
 					}
 				}
 			}
-			const img = nativeImage.createFromBuffer(canvas, { width: size, height: size });
+			const img = nativeImage.createFromBuffer(canvas, {
+				width: size,
+				height: size,
+			});
 			icon = new Tray(img);
 		}
 	} catch {}
@@ -185,7 +215,8 @@ function buildMenu() {
 							title: i18n.t("app.heading"),
 							message: i18n.t("app.heading") + " v" + pkg.version,
 							detail: [
-								i18n.t("menu.help.aboutAuthor") + ": Дуплей Максим Игоревич",
+								i18n.t("menu.help.aboutAuthor") +
+									": Дуплей Максим Игоревич",
 								"",
 								i18n.t("menu.help.school") + ": Maestro7IT",
 								"",
@@ -206,16 +237,25 @@ function buildMenu() {
 				},
 				{
 					label: i18n.t("menu.help.authorSite"),
-					click: () => shell.openExternal("https://via-antiqua-maestro7it.amvera.io/"),
+					click: () =>
+						shell.openExternal(
+							"https://via-antiqua-maestro7it.amvera.io/"
+						),
 				},
 				{ type: "separator" },
 				{
 					label: i18n.t("menu.help.github"),
-					click: () => shell.openExternal("https://github.com/QuadDarv1ne/rutube-downloader"),
+					click: () =>
+						shell.openExternal(
+							"https://github.com/QuadDarv1ne/rutube-downloader"
+						),
 				},
 				{
 					label: i18n.t("menu.help.report"),
-					click: () => shell.openExternal("https://github.com/QuadDarv1ne/rutube-downloader/issues"),
+					click: () =>
+						shell.openExternal(
+							"https://github.com/QuadDarv1ne/rutube-downloader/issues"
+						),
 				},
 			],
 		},
@@ -240,7 +280,7 @@ function createWindow() {
 		},
 	});
 	mainWindow.loadFile(path.join(__dirname, "index.html"));
-	mainWindow.on("close", (e) => {
+	mainWindow.on("close", e => {
 		if (!isQuitting) {
 			e.preventDefault();
 			mainWindow.hide();
@@ -260,6 +300,11 @@ function createWindow() {
 }
 
 app.disableHardwareAcceleration();
+
+const gotSingleInstance = app.requestSingleInstanceLock();
+if (!gotSingleInstance) {
+	app.quit();
+}
 
 app.whenReady().then(() => {
 	crashLogPath = path.join(app.getPath("userData"), "crash.log");
@@ -282,7 +327,10 @@ app.on("before-quit", () => {
 	isQuitting = true;
 });
 app.on("child-process-gone", (event, details) => {
-	logCrash(`child-process-gone (${details.type}, reason=${details.reason})`, details.error);
+	logCrash(
+		`child-process-gone (${details.type}, reason=${details.reason})`,
+		details.error
+	);
 });
 
 // --- IPC ---
@@ -296,10 +344,14 @@ ipcMain.handle("open-external", (_, url) => {
 // Settings
 ipcMain.handle("get-settings", () => getSettings());
 ipcMain.handle("save-settings", (_, data) => {
-	if (typeof data.downloadParallel === "number") configure.downloadParallel = data.downloadParallel;
-	if (typeof data.lastFolder === "string") configure.lastFolder = data.lastFolder;
-	if (typeof data.defaultFormat === "string") configure.defaultFormat = data.defaultFormat;
-	if (typeof data.defaultAudioFormat === "string") configure.defaultAudioFormat = data.defaultAudioFormat;
+	if (typeof data.downloadParallel === "number")
+		configure.downloadParallel = data.downloadParallel;
+	if (typeof data.lastFolder === "string")
+		configure.lastFolder = data.lastFolder;
+	if (typeof data.defaultFormat === "string")
+		configure.defaultFormat = data.defaultFormat;
+	if (typeof data.defaultAudioFormat === "string")
+		configure.defaultAudioFormat = data.defaultAudioFormat;
 	saveSettings();
 	return getSettings();
 });
@@ -349,8 +401,17 @@ ipcMain.handle("select-file", async (_, title, filters) => {
 			{
 				name: i18n.t("dialog.filterVideo"),
 				extensions: [
-					"ts", "mp4", "mkv", "avi", "mov", "webm",
-					"flv", "mpg", "mpeg", "m4v", "3gp",
+					"ts",
+					"mp4",
+					"mkv",
+					"avi",
+					"mov",
+					"webm",
+					"flv",
+					"mpg",
+					"mpeg",
+					"m4v",
+					"3gp",
 				],
 			},
 			{ name: i18n.t("dialog.filterAll"), extensions: ["*"] },
@@ -383,6 +444,28 @@ ipcMain.handle("cancel-download", () => {
 
 ipcMain.handle("is-downloading", () => activeDownload !== null);
 
+function updateTaskbarProgress(current, total) {
+	if (!mainWindow || mainWindow.isDestroyed()) return;
+	if (typeof total === "number" && total > 0 && typeof current === "number") {
+		mainWindow.setProgressBar(current / total);
+	} else {
+		mainWindow.setProgressBar(-1);
+	}
+}
+
+function sendProgress(data) {
+	if (mainWindow && !mainWindow.isDestroyed()) {
+		mainWindow.webContents.send("download-progress", data);
+		if (data.stage === "segments" && data.total > 0) {
+			updateTaskbarProgress(data.current, data.total);
+		} else if (data.stage === "done" || data.stage === "error") {
+			mainWindow.setProgressBar(-1);
+		} else if (data.stage === "merge" || data.stage === "convert") {
+			mainWindow.setProgressBar(2);
+		}
+	}
+}
+
 // Download
 ipcMain.handle(
 	"download",
@@ -401,13 +484,10 @@ ipcMain.handle(
 			throw new Error(i18n.t("error.unsupportedFormat") + format);
 		}
 		if (audioFormat && !isValidAudioFormat(audioFormat)) {
-			throw new Error(i18n.t("error.unsupportedAudioFormat") + audioFormat);
+			throw new Error(
+				i18n.t("error.unsupportedAudioFormat") + audioFormat
+			);
 		}
-		const sendProgress = data => {
-			if (mainWindow && !mainWindow.isDestroyed()) {
-				mainWindow.webContents.send("download-progress", data);
-			}
-		};
 
 		if (activeDownload) {
 			throw new Error(i18n.t("error.alreadyDownloading"));
@@ -425,7 +505,11 @@ ipcMain.handle(
 			if (audioFormat) {
 				sendProgress({
 					stage: "convert",
-					message: i18n.t("cli.extractingAudio") + path.basename(filePath) + " \u2192 " + audioFormat.toUpperCase(),
+					message:
+						i18n.t("cli.extractingAudio") +
+						path.basename(filePath) +
+						" \u2192 " +
+						audioFormat.toUpperCase(),
 				});
 				const audioPath = await extractAudio(
 					filePath,
@@ -435,17 +519,26 @@ ipcMain.handle(
 					controller.signal
 				);
 				sendProgress({ stage: "done", filePath: audioPath });
-				showNotification(i18n.t("notification.done") || "Загрузка завершена", path.basename(audioPath));
+				showNotification(
+					i18n.t("notification.done") || "Загрузка завершена",
+					path.basename(audioPath)
+				);
 				return { ok: true, filePath: audioPath };
 			}
 			sendProgress({ stage: "done", filePath });
-			showNotification(i18n.t("notification.done") || "Загрузка завершена", path.basename(filePath));
+			showNotification(
+				i18n.t("notification.done") || "Загрузка завершена",
+				path.basename(filePath)
+			);
 			return { ok: true, filePath };
 		} catch (e) {
 			if (controller.signal.aborted) {
 				return { ok: false, error: i18n.t("error.downloadCancelled") };
 			}
-			showNotification(i18n.t("notification.error") || "Ошибка загрузки", e.message);
+			showNotification(
+				i18n.t("notification.error") || "Ошибка загрузки",
+				e.message
+			);
 			return { ok: false, error: e.message };
 		} finally {
 			if (activeDownload === controller) activeDownload = null;
@@ -470,23 +563,30 @@ ipcMain.handle("convert", async (_, { src, dir, format }) => {
 	if (activeConvert) {
 		throw new Error(i18n.t("error.alreadyConverting"));
 	}
-	const sendProgress = data => {
-		if (mainWindow && !mainWindow.isDestroyed()) {
-			mainWindow.webContents.send("download-progress", data);
-		}
-	};
 	const controller = new AbortController();
 	activeConvert = controller;
 	try {
-		const filePath = await convertFile(src, dir, format, sendProgress, controller.signal);
+		const filePath = await convertFile(
+			src,
+			dir,
+			format,
+			sendProgress,
+			controller.signal
+		);
 		sendProgress({ stage: "done", filePath });
-		showNotification(i18n.t("notification.done") || "Конвертация завершена", path.basename(filePath));
+		showNotification(
+			i18n.t("notification.done") || "Конвертация завершена",
+			path.basename(filePath)
+		);
 		return { ok: true, filePath };
 	} catch (e) {
 		if (controller.signal.aborted) {
 			return { ok: false, error: i18n.t("error.cancelled") };
 		}
-		showNotification(i18n.t("notification.error") || "Ошибка конвертации", e.message);
+		showNotification(
+			i18n.t("notification.error") || "Ошибка конвертации",
+			e.message
+		);
 		return { ok: false, error: e.message };
 	} finally {
 		if (activeConvert === controller) activeConvert = null;
@@ -502,23 +602,30 @@ ipcMain.handle("extract-audio", async (_, { src, dir, format }) => {
 	if (activeConvert) {
 		throw new Error(i18n.t("error.alreadyConverting"));
 	}
-	const sendProgress = data => {
-		if (mainWindow && !mainWindow.isDestroyed()) {
-			mainWindow.webContents.send("download-progress", data);
-		}
-	};
 	const controller = new AbortController();
 	activeConvert = controller;
 	try {
-		const filePath = await extractAudio(src, dir, format, sendProgress, controller.signal);
+		const filePath = await extractAudio(
+			src,
+			dir,
+			format,
+			sendProgress,
+			controller.signal
+		);
 		sendProgress({ stage: "done", filePath });
-		showNotification(i18n.t("notification.done") || "Извлечение аудио завершено", path.basename(filePath));
+		showNotification(
+			i18n.t("notification.done") || "Извлечение аудио завершено",
+			path.basename(filePath)
+		);
 		return { ok: true, filePath };
 	} catch (e) {
 		if (controller.signal.aborted) {
 			return { ok: false, error: i18n.t("error.cancelled") };
 		}
-		showNotification(i18n.t("notification.error") || "Ошибка извлечения аудио", e.message);
+		showNotification(
+			i18n.t("notification.error") || "Ошибка извлечения аудио",
+			e.message
+		);
 		return { ok: false, error: e.message };
 	} finally {
 		if (activeConvert === controller) activeConvert = null;

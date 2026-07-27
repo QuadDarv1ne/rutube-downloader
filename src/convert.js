@@ -17,6 +17,10 @@ exports.convertFile = function (src, destDir, format, onProgress, signal) {
 	const outName = `${srcName}.${outExt}`;
 	const outPath = path.join(destDir, outName);
 
+	if (signal && signal.aborted) {
+		return Promise.reject(new Error(t("error.downloadCancelled")));
+	}
+
 	const args = ["-y", "-i", src, "-c", "copy", "-map_metadata", "0"];
 	if (outExt === "mp4" || outExt === "mov") {
 		args.push("-bsf:a", "aac_adtstoasc");
@@ -35,21 +39,31 @@ exports.convertFile = function (src, destDir, format, onProgress, signal) {
 		let stderr = "";
 		let aborted = false;
 
+		let abortHandler;
 		if (signal) {
-			signal.addEventListener("abort", () => {
+			abortHandler = () => {
 				aborted = true;
 				child.kill("SIGTERM");
-			});
+			};
+			signal.addEventListener("abort", abortHandler, { once: true });
 		}
+
+		const cleanup = () => {
+			if (signal && abortHandler) {
+				signal.removeEventListener("abort", abortHandler);
+			}
+		};
 
 		child.stderr.on("data", chunk => {
 			stderr += chunk;
 		});
 		child.on("error", err => {
+			cleanup();
 			if (aborted) return reject(new Error(t("error.downloadCancelled")));
 			reject(new Error(t("ffmpeg.error.launch") + err.message));
 		});
 		child.on("exit", code => {
+			cleanup();
 			if (aborted) return reject(new Error(t("error.downloadCancelled")));
 			if (code)
 				reject(
@@ -74,6 +88,10 @@ exports.extractAudio = function (src, destDir, format, onProgress, signal) {
 		throw new Error(t("error.unsupportedAudioFormat") + format);
 	}
 
+	if (signal && signal.aborted) {
+		return Promise.reject(new Error(t("error.downloadCancelled")));
+	}
+
 	const args = ["-y", "-i", src, ...audioArgs, outPath];
 	if (isHideBannerSupported()) args.unshift("-hide_banner");
 
@@ -88,21 +106,31 @@ exports.extractAudio = function (src, destDir, format, onProgress, signal) {
 		let stderr = "";
 		let aborted = false;
 
+		let abortHandler;
 		if (signal) {
-			signal.addEventListener("abort", () => {
+			abortHandler = () => {
 				aborted = true;
 				child.kill("SIGTERM");
-			});
+			};
+			signal.addEventListener("abort", abortHandler, { once: true });
 		}
+
+		const cleanup = () => {
+			if (signal && abortHandler) {
+				signal.removeEventListener("abort", abortHandler);
+			}
+		};
 
 		child.stderr.on("data", chunk => {
 			stderr += chunk;
 		});
 		child.on("error", err => {
+			cleanup();
 			if (aborted) return reject(new Error(t("error.downloadCancelled")));
 			reject(new Error(t("ffmpeg.error.launch") + err.message));
 		});
 		child.on("exit", code => {
+			cleanup();
 			if (aborted) return reject(new Error(t("error.downloadCancelled")));
 			if (code)
 				reject(

@@ -78,20 +78,38 @@ exports.mergeAndConvert = async function (cfg, segmentFiles, title) {
 	} catch (e) {
 		console.log(_colors.redBright(t("ffmpeg.error.launch") + e.message));
 		if (typeof cfg.onProgress === "function") {
-			cfg.onProgress({ stage: "error", message: t("ffmpeg.error.launch") + e.message });
+			cfg.onProgress({
+				stage: "error",
+				message: t("ffmpeg.error.launch") + e.message,
+			});
 		}
 		throw e;
 	}
 	return videoFileName;
 };
 
-async function downloadSegment(segmentUrl, segmentFilePath, options, segmentIndex) {
+async function downloadSegment(
+	segmentUrl,
+	segmentFilePath,
+	options,
+	segmentIndex,
+	signal
+) {
+	if (signal?.aborted) throw new Error(t("error.downloadCancelled"));
 	let lastError;
 	for (let attempt = 1; attempt <= MAX_SEGMENT_RETRIES; attempt++) {
 		try {
+			if (signal?.aborted) throw new Error(t("error.downloadCancelled"));
 			const controller = new AbortController();
 			const timer = setTimeout(() => controller.abort(), SEGMENT_TIMEOUT);
-			let rs = await fetch(segmentUrl, { ...options, signal: controller.signal });
+			if (signal)
+				signal.addEventListener("abort", () => controller.abort(), {
+					once: true,
+				});
+			let rs = await fetch(segmentUrl, {
+				...options,
+				signal: controller.signal,
+			});
 			clearTimeout(timer);
 			if (rs.ok) {
 				await streamPipeline(
@@ -101,11 +119,18 @@ async function downloadSegment(segmentUrl, segmentFilePath, options, segmentInde
 				// Verify file was actually written
 				const stat = fs.statSync(segmentFilePath);
 				if (stat.size === 0) {
-					lastError = new Error(`Empty segment file (attempt ${attempt})`);
-					try { fs.unlinkSync(segmentFilePath); } catch {}
-				} else {
-					return null;
+					lastError = new Error(
+						`Empty segment file (attempt ${attempt})`
+					);
+					try {
+						fs.unlinkSync(segmentFilePath);
+					} catch {}
+					if (attempt < MAX_SEGMENT_RETRIES) {
+						await delay(2000 * attempt);
+					}
+					continue;
 				}
+				return null;
 			} else {
 				lastError = new Error(`HTTP ${rs.status} ${rs.statusText}`);
 			}
@@ -113,7 +138,9 @@ async function downloadSegment(segmentUrl, segmentFilePath, options, segmentInde
 			lastError = e;
 		}
 		// Clean up partial file before retry
-		try { fs.unlinkSync(segmentFilePath); } catch {}
+		try {
+			fs.unlinkSync(segmentFilePath);
+		} catch {}
 		if (attempt < MAX_SEGMENT_RETRIES) {
 			await delay(2000 * attempt);
 		}
@@ -125,6 +152,7 @@ exports.downloadSegment = downloadSegment;
 exports.downloadFile = async function (cfg, segments, options) {
 	await createDir(cfg.video);
 	await deleteFiles(/^segment-.*\.\w+$/, cfg.video);
+	let cleanupNeeded = true;
 
 	process.title = t("cli.download") + " " + cfg.title;
 
@@ -143,78 +171,116 @@ exports.downloadFile = async function (cfg, segments, options) {
 
 	progress.start(segments.length, 0, { filename: " ", totalBytes: 0 });
 
-	await parallelFor(
-		cfg.parallelNum,
-		segments,
-		async (segmentUrl, segmentIndex) => {
-			const ext = path.extname(segmentUrl.split("?")[0]) || ".ts";
-			const segmentFileName =
-				"segment-" + `${segmentIndex + 1}`.padStart(10, "0") + ext;
-			const segmentFilePath = path.join(cfg.video, segmentFileName);
-
-			activeSegmentsNums.add(segmentIndex + 1);
-			if (!progressStopped) {
-				progress.update(
-					existsCount(arrFiles),
-					{ filename: [...activeSegmentsNums].sort((a, b) => a - b).join(", ") || " ", totalBytes }
-				);
-			}
-			if (typeof cfg.onProgress === "function") {
-				cfg.onProgress({
-					stage: "segments",
-					current: existsCount(arrFiles),
-					total: segments.length,
-				});
-			}
-			const error = await downloadSegment(
-				segmentUrl,
-				segmentFilePath,
-				options,
-				segmentIndex + 1
-			);
-			if (error) {
-				progressStopped = true;
-				progress.stop();
-				const segErr = new Error(
-					`${t("error.segmentFailed")} #${segmentIndex + 1}: ${error.message}`
-				);
-				console.log(_colors.redBright(segErr.message));
-				throw segErr;
-			}
-
-			arrFiles[segmentIndex] = segmentFilePath;
-			activeSegmentsNums.delete(segmentIndex + 1);
-
-			try { totalBytes += fs.statSync(segmentFilePath).size; } catch {}
-			if (!progressStopped) {
-				progress.update(
-					existsCount(arrFiles),
-					{ filename: [...activeSegmentsNums].sort((a, b) => a - b).join(", ") || " ", totalBytes }
-				);
-			}
-			if (typeof cfg.onProgress === "function") {
-				cfg.onProgress({
-					stage: "segments",
-					current: existsCount(arrFiles),
-					total: segments.length,
-				});
-			}
-		}
-	);
-
-	if (!progressStopped) {
-		progress.update(existsCount(arrFiles), { filename: " ", totalBytes });
-		progress.stop();
+	const signal = cfg.signal;
+	if (signal?.aborted) {
+		cleanupNeeded = false;
+		throw new Error(t("error.downloadCancelled"));
 	}
 
-	if (typeof cfg.onProgress === "function")
-		cfg.onProgress({ stage: "merge" });
+	try {
+		await parallelFor(
+			cfg.parallelNum,
+			segments,
+			async (segmentUrl, segmentIndex) => {
+				if (signal?.aborted)
+					throw new Error(t("error.downloadCancelled"));
+				const ext = path.extname(segmentUrl.split("?")[0]) || ".ts";
+				const segmentFileName =
+					"segment-" + `${segmentIndex + 1}`.padStart(10, "0") + ext;
+				const segmentFilePath = path.join(cfg.video, segmentFileName);
 
-	const saveTitle = cfg.title;
-	const filesToMerge = arrFiles.filter(Boolean);
-	const videoFileName = await exports.mergeAndConvert(cfg, filesToMerge, saveTitle);
-	await delay(500);
-	console.log(_colors.yellowBright(t("cli.done")));
-	console.log("".padEnd(configure.padLine, "_"));
-	return videoFileName;
+				activeSegmentsNums.add(segmentIndex + 1);
+				if (!progressStopped) {
+					progress.update(existsCount(arrFiles), {
+						filename:
+							[...activeSegmentsNums]
+								.sort((a, b) => a - b)
+								.join(", ") || " ",
+						totalBytes,
+					});
+				}
+				if (typeof cfg.onProgress === "function") {
+					cfg.onProgress({
+						stage: "segments",
+						current: existsCount(arrFiles),
+						total: segments.length,
+					});
+				}
+				const error = await downloadSegment(
+					segmentUrl,
+					segmentFilePath,
+					options,
+					segmentIndex + 1,
+					signal
+				);
+				if (error) {
+					progressStopped = true;
+					progress.stop();
+					const segErr = new Error(
+						`${t("error.segmentFailed")} #${segmentIndex + 1}: ${
+							error.message
+						}`
+					);
+					console.log(_colors.redBright(segErr.message));
+					throw segErr;
+				}
+
+				arrFiles[segmentIndex] = segmentFilePath;
+				activeSegmentsNums.delete(segmentIndex + 1);
+
+				try {
+					totalBytes += fs.statSync(segmentFilePath).size;
+				} catch {}
+				if (!progressStopped) {
+					progress.update(existsCount(arrFiles), {
+						filename:
+							[...activeSegmentsNums]
+								.sort((a, b) => a - b)
+								.join(", ") || " ",
+						totalBytes,
+					});
+				}
+				if (typeof cfg.onProgress === "function") {
+					cfg.onProgress({
+						stage: "segments",
+						current: existsCount(arrFiles),
+						total: segments.length,
+					});
+				}
+			},
+			signal
+		);
+
+		if (!progressStopped) {
+			progress.update(existsCount(arrFiles), {
+				filename: " ",
+				totalBytes,
+			});
+			progress.stop();
+		}
+
+		if (typeof cfg.onProgress === "function")
+			cfg.onProgress({ stage: "merge" });
+
+		const saveTitle = cfg.title;
+		const filesToMerge = arrFiles.filter(Boolean);
+		const videoFileName = await exports.mergeAndConvert(
+			cfg,
+			filesToMerge,
+			saveTitle
+		);
+		await delay(500);
+		cleanupNeeded = false;
+		console.log(_colors.yellowBright(t("cli.done")));
+		console.log("".padEnd(configure.padLine, "_"));
+		return videoFileName;
+	} catch (e) {
+		if (cleanupNeeded) {
+			deleteFiles(/^segment-.*\.\w+$/, cfg.video).catch(() => {});
+		}
+		if (!progressStopped) {
+			progress.stop();
+		}
+		throw e;
+	}
 };

@@ -84,6 +84,10 @@
   "error.cannotSaveVideo": "Cannot save video",
   "error.cannotExtractVideoData": "Cannot extract video data: ",
   "error.hlsNotFound": "HLS link not found: ",
+  "error.vkLiveLoadError": "VK Live: error loading ",
+  "error.vkLiveNoPlayerUrls": "Could not find video data on page",
+  "error.vkLiveNoRecords": "No records found for this channel",
+  "error.vkLiveLiveStreamNotSupported": "Live stream downloading is not supported yet. The recording will be available after the stream ends.",
 
   "youtube.fetchingInfo": "Fetching video info...",
   "youtube.slowHint": "No response for a while. You probably need a VPN — video won't download without it.",

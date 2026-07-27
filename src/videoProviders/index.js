@@ -4,6 +4,7 @@ const videoProviders = [
 	require("./ok"),
 	require("./rutube"),
 	require("./vk"),
+	require("./vkLive"),
 ];
 
 exports.selectVideoProvider = function (url) {

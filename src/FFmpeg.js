@@ -61,10 +61,11 @@ exports.execFFmpeg = async (input, output, options = {}) => {
 
 	return new Promise((resolve, reject) => {
 		const timer = setTimeout(() => {
+			child.kill("SIGTERM");
 			reject(new Error(t("ffmpeg.error.launch") + "ffmpeg process timed out after " + FFMPEG_TIMEOUT / 1000 + "s"));
 		}, FFMPEG_TIMEOUT);
 
-		const child = execFile(ffmpeg, args, { timeout: FFMPEG_TIMEOUT });
+		const child = execFile(ffmpeg, args);
 		let stderr = "";
 
 		child.stderr.on("data", chunk => { stderr += chunk; });
