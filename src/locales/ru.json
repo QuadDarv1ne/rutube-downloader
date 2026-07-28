@@ -1,5 +1,5 @@
 {
-  "app.title": "Rutube Downloader — RuTube, VK, OK, Aser.pro",
+  "app.title": "Rutube Downloader — RuTube, VK, OK, Dailymotion, Aser.pro",
   "app.heading": "Rutube Downloader",
 
   "tab.other": "RuTube, VK, OK, Aser",
@@ -16,7 +16,7 @@
   "label.mode": "Режим",
   "label.format": "Формат",
 
-  "placeholder.urlOther": "rutube.ru, vkvideo.ru, ok.ru, aser.pro",
+  "placeholder.urlOther": "rutube.ru, vkvideo.ru, ok.ru, dailymotion.com, aser.pro",
   "placeholder.urlYoutube": "youtube.com, youtu.be",
   "placeholder.selectFolder": "Выберите папку",
   "placeholder.selectFile": "Выберите видео-файл",

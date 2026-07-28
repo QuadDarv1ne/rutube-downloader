@@ -72,10 +72,10 @@ module.exports = {
 				throw new Error(t("error.downloadCancelled"));
 			}
 			send(t("youtube.fetchingInfo"));
+			let info;
 			const slowHintTimer = setTimeout(() => {
 				send(t("youtube.slowHint"));
 			}, 30000);
-			let info;
 			try {
 				info = await youtubedl(cfg.url, {
 					dumpSingleJson: true,
@@ -116,13 +116,21 @@ module.exports = {
 			attachProgressStream(subprocess.stderr, send);
 			if (subprocess.stdout) attachProgressStream(subprocess.stdout, send);
 
+			let abortHandler;
 			if (cfg.signal) {
-				cfg.signal.addEventListener("abort", () => {
+				abortHandler = () => {
 					try { subprocess.kill("SIGTERM"); } catch {}
-				}, { once: true });
+				};
+				cfg.signal.addEventListener("abort", abortHandler);
 			}
 
-			await subprocess;
+			try {
+				await subprocess;
+			} finally {
+				if (cfg.signal && abortHandler) {
+					cfg.signal.removeEventListener("abort", abortHandler);
+				}
+			}
 		} catch (e) {
 			if (cfg.signal && cfg.signal.aborted) {
 				throw new Error(t("error.downloadCancelled"));

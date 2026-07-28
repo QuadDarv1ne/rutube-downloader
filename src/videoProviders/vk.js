@@ -379,7 +379,7 @@ module.exports = {
 				throw new Error(t("error.cannotGetVideoInfoApi") + vkVideoInfo.status + " " + vkVideoInfo.statusText);
 			}
 
-			let text = await vkVideoInfo.textConverted();
+			let text = await vkVideoInfo.text();
 			const json = JSON.parse(text.replace(/<!--/g, "").replace(/-->/g, ""));
 			cfg.title = sanitizeTitle(cfg.title, json.payload?.[1]?.[0]);
 

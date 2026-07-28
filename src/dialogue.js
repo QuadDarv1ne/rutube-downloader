@@ -4,6 +4,7 @@ const { configure } = require("./configure");
 const { t } = require("./i18n");
 
 const findMaxIndex = function (arr) {
+	if (!arr || !arr.length) return 0;
 	let max = arr[0],
 		maxIndex = 0;
 	for (let i = 1, l = arr.length; i < l; i++) {

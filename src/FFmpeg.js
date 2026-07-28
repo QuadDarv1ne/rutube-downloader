@@ -49,7 +49,15 @@ function isHideBannerSupported() {
 
 exports.execFFmpeg = async (input, output, options = {}) => {
 	const ffmpeg = getFFmpegPath();
-	const args = ["-y", "-i", input, "-vcodec", "copy", "-acodec", "copy"];
+	const args = ["-y"];
+
+	if (options.concat) {
+		args.push("-f", "concat", "-safe", "0", "-i", input);
+	} else {
+		args.push("-i", input);
+	}
+
+	args.push("-vcodec", "copy", "-acodec", "copy");
 
 	if (options.bsf) args.push("-bsf:a", options.bsf);
 	if (options.outputFormat) args.push("-f", options.outputFormat);
@@ -60,12 +68,19 @@ exports.execFFmpeg = async (input, output, options = {}) => {
 	if (isHideBannerSupported()) args.unshift("-hide_banner");
 
 	return new Promise((resolve, reject) => {
+		let child;
+		try {
+			child = execFile(ffmpeg, args);
+		} catch (e) {
+			reject(new Error(t("ffmpeg.error.launch") + e.message));
+			return;
+		}
+
 		const timer = setTimeout(() => {
-			child.kill("SIGTERM");
+			if (child) child.kill("SIGTERM");
 			reject(new Error(t("ffmpeg.error.launch") + "ffmpeg process timed out after " + FFMPEG_TIMEOUT / 1000 + "s"));
 		}, FFMPEG_TIMEOUT);
 
-		const child = execFile(ffmpeg, args);
 		let stderr = "";
 
 		child.stderr.on("data", chunk => { stderr += chunk; });

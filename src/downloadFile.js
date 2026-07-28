@@ -5,7 +5,6 @@ const fs = require("node:fs");
 
 const fetch = require("node-fetch");
 const _colors = require("ansi-colors");
-const splitFile = require("split-file");
 
 const { configure } = require("./configure");
 const { createDir, deleteFiles, deleteFile } = require("./fsUtils");
@@ -40,16 +39,6 @@ exports.mergeAndConvert = async function (cfg, segmentFiles, title) {
 		_colors.yellowBright(`${saveTitle}${ext}`)
 	);
 	console.log(t("cli.pleaseWait").padStart(configure.padText, " "), "\n");
-	await splitFile.mergeFiles(
-		segmentFiles,
-		path.join(cfg.video, `${saveTitle}${ext}`)
-	);
-	console.log(
-		t("cli.deleteFiles").padStart(configure.padText, " "),
-		_colors.yellowBright(`${segmentFiles.length}`),
-		"\n"
-	);
-	await deleteFiles(/^segment-.*\.\w+$/, cfg.video);
 
 	const outExt = getExt(cfg.format || "mp4");
 	const videoFileName = `${saveTitle}.${outExt}`;
@@ -67,14 +56,19 @@ exports.mergeAndConvert = async function (cfg, segmentFiles, title) {
 	);
 	console.log(t("cli.pleaseWait").padStart(configure.padText, " "));
 	console.log("\u00A0");
-	const segmentsVideoFilePath = path.join(cfg.video, `${saveTitle}${ext}`);
-	const ffmpegOpts = {};
+
+	const fileListPath = path.join(cfg.video, "filelist.txt");
+	const fileListContent = segmentFiles
+		.map(f => "file '" + f.replace(/\\/g, "/").replace(/'/g, "'\\''") + "'")
+		.join("\n");
+	fs.writeFileSync(fileListPath, fileListContent, "utf8");
+
+	const ffmpegOpts = { concat: true };
 	if (outExt === "mp4" || outExt === "mov") {
 		ffmpegOpts.bsf = "aac_adtstoasc";
 	}
 	try {
-		await execFFmpeg(segmentsVideoFilePath, videoFilePath, ffmpegOpts);
-		await deleteFile(segmentsVideoFilePath);
+		await execFFmpeg(fileListPath, videoFilePath, ffmpegOpts);
 	} catch (e) {
 		console.log(_colors.redBright(t("ffmpeg.error.launch") + e.message));
 		if (typeof cfg.onProgress === "function") {
@@ -84,6 +78,9 @@ exports.mergeAndConvert = async function (cfg, segmentFiles, title) {
 			});
 		}
 		throw e;
+	} finally {
+		await deleteFile(fileListPath);
+		await deleteFiles(/^segment-.*\.\w+$/, cfg.video);
 	}
 	return videoFileName;
 };
@@ -98,25 +95,24 @@ async function downloadSegment(
 	if (signal?.aborted) throw new Error(t("error.downloadCancelled"));
 	let lastError;
 	for (let attempt = 1; attempt <= MAX_SEGMENT_RETRIES; attempt++) {
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), SEGMENT_TIMEOUT);
+		let onAbort;
+		if (signal) {
+			onAbort = () => controller.abort();
+			signal.addEventListener("abort", onAbort);
+		}
 		try {
 			if (signal?.aborted) throw new Error(t("error.downloadCancelled"));
-			const controller = new AbortController();
-			const timer = setTimeout(() => controller.abort(), SEGMENT_TIMEOUT);
-			if (signal)
-				signal.addEventListener("abort", () => controller.abort(), {
-					once: true,
-				});
 			let rs = await fetch(segmentUrl, {
 				...options,
 				signal: controller.signal,
 			});
-			clearTimeout(timer);
 			if (rs.ok) {
 				await streamPipeline(
 					rs.body,
 					fs.createWriteStream(segmentFilePath)
 				);
-				// Verify file was actually written
 				const stat = fs.statSync(segmentFilePath);
 				if (stat.size === 0) {
 					lastError = new Error(
@@ -136,8 +132,12 @@ async function downloadSegment(
 			}
 		} catch (e) {
 			lastError = e;
+		} finally {
+			clearTimeout(timer);
+			if (signal && onAbort) {
+				signal.removeEventListener("abort", onAbort);
+			}
 		}
-		// Clean up partial file before retry
 		try {
 			fs.unlinkSync(segmentFilePath);
 		} catch {}

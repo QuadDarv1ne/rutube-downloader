@@ -6,12 +6,20 @@ const DEFAULT_TIMEOUT = 60000;
 async function getText(url, msg = "fetch failed:", options = {}, timeout = DEFAULT_TIMEOUT) {
 	const controller = new AbortController();
 	const timer = setTimeout(() => controller.abort(), timeout);
+	let onAbort;
+	if (options.signal) {
+		onAbort = () => controller.abort();
+		options.signal.addEventListener("abort", onAbort);
+	}
 	try {
 		const resp = await fetch(url, { ...options, signal: controller.signal });
 		if (!resp.ok) throw new Error(`${msg} ${resp.status} ${resp.statusText}`);
 		return await resp.text();
 	} finally {
 		clearTimeout(timer);
+		if (options.signal && onAbort) {
+			options.signal.removeEventListener("abort", onAbort);
+		}
 	}
 }
 
@@ -22,6 +30,7 @@ exports.getManifest = async function (url, msg, options = {}) {
 			...headers,
 			"Accept": "*/*",
 		},
+		signal: options.signal,
 	};
 	const text = await getText(url, msg, manifestOptions);
 

@@ -1,73 +1,16 @@
 const path = require("node:path");
-const fs = require("node:fs");
-const _colors = require("ansi-colors");
 const { getManifest } = require("../m3u8Utils");
-const { configure } = require("../configure");
-const { selectVideoQuality } = require("../dialogue");
-const { downloadFile, downloadSegment, mergeAndConvert, delay } = require("../downloadFile");
-const { createDir, deleteFiles } = require("../fsUtils");
-const { getProgress } = require("../progress");
-const { fetchWithTimeout } = require("./fetchTimeout");
+const { downloadFile } = require("../downloadFile");
 const { sanitizeTitle } = require("./titleUtils");
 const { t } = require("../i18n");
+const { fetchWithTimeout } = require("./fetchTimeout");
+const { extractCookies, encodeCookies, fetchVkSegments, downloadLiveStream, followVkRedirects, parseInitialState, browserHeaders } = require("./vkCommon");
 
-const liveDomains = "(?:(?:www\\.)?(?:live\\.vkvideo\\.ru|live\\.vkplay\\.ru|vkplay\\.live))";
+
+const liveDomains = "(?:(?:www\.)?(?:live\.vkvideo\.ru|live\.vkplay\.ru|vkplay\.live))";
 const regexRecord = new RegExp(`^https?://${liveDomains}/([^/]+)/record/([a-f0-9-]+)`);
 const regexChannel = new RegExp(`^https?://${liveDomains}/([^/]+)$`);
 
-const browserHeaders = configure.browserHeaders;
-
-const cookieReg = /([^=]+)=([^;]+)/;
-const cookieDomainReg = /domain=([^;]+)/;
-
-function extractCookies(setCookie, cookies = {}, domain) {
-	if (!setCookie || !Array.isArray(setCookie)) return cookies;
-	for (const pair of setCookie) {
-		const res = cookieReg.exec(pair);
-		if (!res) continue;
-		const domainRes = cookieDomainReg.exec(pair);
-		const cookieDomain = domainRes?.length > 0 ? domainRes[1] : domain;
-
-		if (!cookies[cookieDomain]) cookies[cookieDomain] = {};
-
-		if (res[2] === "DELETED") {
-			delete cookies[cookieDomain][res[1]];
-		} else {
-			cookies[cookieDomain][res[1]] = res[2];
-		}
-	}
-	return cookies;
-}
-
-function encodeCookies(c, domain) {
-	return Object.entries(c[domain] ?? {})
-		.map(([key, value]) => `${key}=${value}`)
-		.join("; ");
-}
-
-async function fetchVkSegments(hlsRequestUrl, options) {
-	const hls = await getManifest(hlsRequestUrl, t("error.cannotGetVideo"), options);
-	const playlists = hls["playlists"];
-	if (!playlists || !playlists.length) return null;
-
-	const [playlist] = await selectVideoQuality({ quality: "best" }, playlists);
-	const myURL = new URL(hlsRequestUrl);
-	const segmentsBase = new URL(playlist, myURL).href;
-
-	const segmentsInfo = await getManifest(segmentsBase, t("error.cannotGetSegments"), options);
-	if (!segmentsInfo.segments || !segmentsInfo.segments.length) return null;
-
-	return {
-		segments: segmentsInfo.segments.map(segment => new URL(segment["uri"], segmentsBase).href),
-		base: segmentsBase
-	};
-}
-
-function parseInitialState(html) {
-	const match = html.match(/<script\s+type='text\/plain'\s+id='initial-state'>([\s\S]*?)<\/script>/i);
-	if (!match) return null;
-	return JSON.parse(match[1]);
-}
 
 async function downloadRecord(cfg, recordData, hlsHeaders) {
 	const playerUrls = recordData?.data?.[0]?.playerUrls;
@@ -87,7 +30,7 @@ async function downloadRecord(cfg, recordData, hlsHeaders) {
 
 	console.log(`[VK Live Record] Collecting segments from manifest...`);
 
-	const result = await fetchVkSegments(hlsRequestUrl, options);
+	const result = await fetchVkSegments(hlsRequestUrl, options, cfg.quality);
 	if (!result || !result.segments.length) {
 		throw new Error(t("error.cannotGetSegmentList") + cfg.url);
 	}
@@ -119,7 +62,7 @@ async function handleRecordUrl(cfg, username, recordId) {
 				throw new Error(t("error.cannotLoadVideoPage") + finalUrl + ` (${resp.status})`);
 			}
 			finalUrl = currentUrl;
-			const html = await resp.textConverted();
+			const html = await resp.text();
 			const state = parseInitialState(html);
 			if (!state) {
 				throw new Error(t("error.vkLiveNoPlayerUrls"));
@@ -165,111 +108,6 @@ async function handleRecordUrl(cfg, username, recordId) {
 	throw new Error(t("error.cannotLoadVideoPage") + embedUrl + ` (too many redirects)`);
 }
 
-async function downloadLiveStream(cfg, hlsUrl, options) {
-	const hls = await getManifest(hlsUrl, t("error.cannotGetVideo"), options);
-	const playlists = hls["playlists"];
-	if (!playlists || !playlists.length) {
-		throw new Error(t("error.cannotGetVideo") + cfg.url);
-	}
-
-	const [playlist] = await selectVideoQuality({ quality: "best" }, playlists);
-	const myURL = new URL(hlsUrl);
-	const segmentsBase = new URL(playlist, myURL).href;
-
-	cfg.video = path.join(cfg.video, cfg.title);
-	await createDir(cfg.video);
-	await deleteFiles(/^segment-.*\.\w+$/, cfg.video);
-
-	const signal = cfg.signal;
-	const knownSegments = new Set();
-	const downloadedFiles = [];
-	let segmentCounter = 0;
-	let staleCount = 0;
-	const maxStaleChecks = 10;
-	const refreshInterval = 500;
-	const maxParallel = cfg.parallelNum || 5;
-
-	console.log(`[VK Live] ${t("cli.download")} ${cfg.title}`);
-	console.log(`[VK Live] Streaming — refreshing every ${refreshInterval}ms, ${maxParallel} parallel downloads`);
-
-	const progress = getProgress();
-	const liveMaxSegments = 500;
-	progress.start(liveMaxSegments, 0, { filename: " ", totalBytes: 0 });
-	let totalBytes = 0;
-
-	while (staleCount < maxStaleChecks) {
-		if (signal?.aborted) break;
-
-		let segmentsInfo;
-		try {
-			segmentsInfo = await getManifest(segmentsBase, t("error.cannotGetSegments"), options);
-		} catch {
-			staleCount++;
-			await delay(refreshInterval);
-			continue;
-		}
-
-		if (!segmentsInfo.segments || !segmentsInfo.segments.length) {
-			staleCount++;
-			await delay(refreshInterval);
-			continue;
-		}
-
-		const allSegUrls = segmentsInfo.segments.map(s => new URL(s["uri"], segmentsBase).href);
-		const newSegUrls = allSegUrls.filter(url => !knownSegments.has(url));
-
-		if (newSegUrls.length > 0) {
-			staleCount = 0;
-
-			for (let i = 0; i < newSegUrls.length; i += maxParallel) {
-				const batch = newSegUrls.slice(i, i + maxParallel);
-				const batchStart = segmentCounter + 1;
-
-				await Promise.allSettled(batch.map((segUrl, j) => {
-					const idx = batchStart + j;
-					const ext = path.extname(segUrl.split("?")[0]) || ".ts";
-					const filePath = path.join(cfg.video, "segment-" + `${idx}`.padStart(10, "0") + ext);
-					return downloadSegment(segUrl, filePath, options, idx, signal).then(err => {
-						if (!err) {
-							knownSegments.add(segUrl);
-							downloadedFiles.push(filePath);
-							try { totalBytes += fs.statSync(filePath).size; } catch {}
-						} else {
-							console.log(_colors.yellowBright(`[VK Live] Segment #${idx} failed: ${err.message}`));
-						}
-					});
-				}));
-
-				segmentCounter += batch.length;
-
-				const displayTotal = Math.max(segmentCounter, downloadedFiles.length);
-				if (displayTotal > liveMaxSegments) progress.setTotal(displayTotal + 50);
-				progress.update(downloadedFiles.length, { filename: " ", totalBytes });
-				if (typeof cfg.onProgress === "function") {
-					cfg.onProgress({ stage: "segments", current: downloadedFiles.length, total: displayTotal });
-				}
-			}
-		} else {
-			staleCount++;
-		}
-
-		await delay(refreshInterval);
-	}
-
-	progress.stop();
-
-	if (!downloadedFiles.length) {
-		throw new Error(t("error.cannotGetSegmentList") + cfg.url);
-	}
-
-	downloadedFiles.sort();
-
-	if (typeof cfg.onProgress === "function") cfg.onProgress({ stage: "merge" });
-
-	const videoFileName = await mergeAndConvert(cfg, downloadedFiles, cfg.title);
-	return [videoFileName, null];
-}
-
 async function tryDownloadLiveStream(cfg, username, channelCookies) {
 	const embedUrl = `https://live.vkvideo.ru/app/embed/${username}`;
 	let cookies = { ...(channelCookies || {}) };
@@ -282,7 +120,7 @@ async function tryDownloadLiveStream(cfg, username, channelCookies) {
 
 	cookies = extractCookies(embedResp.headers.raw()["set-cookie"], cookies, ".vkvideo.ru");
 
-	const embedHtml = await embedResp.textConverted();
+	const embedHtml = await embedResp.text();
 	const embedState = parseInitialState(embedHtml);
 	if (!embedState) return null;
 
@@ -350,7 +188,7 @@ async function handleChannelUrl(cfg, username) {
 		throw new Error(t("error.cannotLoadVideoPage") + channelUrl + ` (${channelResp.status})`);
 	}
 
-	const html = await channelResp.textConverted();
+	const html = await channelResp.text();
 	const state = parseInitialState(html);
 	if (!state) {
 		throw new Error(t("error.vkLiveNoPlayerUrls"));
@@ -380,7 +218,6 @@ async function handleChannelUrl(cfg, username) {
 	const embedUrl = `https://live.vkvideo.ru/app/embed/${username}/${latest.id}`;
 	console.log(`[VK Live] Most recent: "${latest.title}" (duration: ${Math.floor(latest.duration / 60)} min)`);
 
-	cfg.url = recordUrl;
 	let embedResp;
 	currentUrl = embedUrl;
 	for (let i = 0; i < 10; i++) {
@@ -404,7 +241,7 @@ async function handleChannelUrl(cfg, username) {
 		throw new Error(t("error.cannotLoadVideoPage") + embedUrl + ` (${embedResp.status})`);
 	}
 
-	const embedHtml = await embedResp.textConverted();
+	const embedHtml = await embedResp.text();
 	const embedState = parseInitialState(embedHtml);
 	if (!embedState) {
 		throw new Error(t("error.vkLiveNoPlayerUrls"));

@@ -52,6 +52,7 @@ let isQuitting = false;
 // --- Supported URL patterns for clipboard detection ---
 const URL_PATTERNS = [
 	/^https?:\/\/(?:www\.)?(?:youtube\.com\/watch|youtu\.be\/)/,
+	/^https?:\/\/(?:www\.)?dailymotion\.com\/video\//,
 	/^https?:\/\/(?:www\.)?rutube\.ru\/video\//,
 	/^https?:\/\/(?:(?:[a-z]+\.)?vk(?:video)?\.(?:ru|com))\/(?:playlist\/[^/]+\/)?(?:video|live-|clip)/,
 	/^https?:\/\/(?:(?:[a-z]+\.)?vk(?:video)?\.(?:ru|com))\/(?:.*?\?.*?z=)(?:video|clip)/,

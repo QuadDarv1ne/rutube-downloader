@@ -8,44 +8,51 @@ exports.parallelFor = async function (parallelNum, items, fn, signal) {
 	let nextItemIndex = 0;
 	let aborted = false;
 
+	let onAbort;
 	if (signal) {
-		const onAbort = () => {
+		onAbort = () => {
 			aborted = true;
 		};
-		signal.addEventListener("abort", onAbort, { once: true });
+		signal.addEventListener("abort", onAbort);
 	}
 
-	function runTask(item, itemIndex, slotIndex) {
-		return fn(item, itemIndex).then(
-			() => ({ ok: true, slotIndex }),
-			err => {
-				if (!firstError) firstError = err;
-				return { ok: false, slotIndex, err };
-			}
-		);
-	}
-
-	const slots = [];
-	const slotCount = Math.min(parallelNum, itemsLength);
-	for (let i = 0; i < slotCount; i++) {
-		slots[i] = runTask(items[nextItemIndex], nextItemIndex, i);
-		nextItemIndex++;
-	}
-
-	while (nextItemIndex < itemsLength && !firstError && !aborted) {
-		const result = await Promise.race(slots);
-		if (!result.ok) {
-			break;
+	try {
+		function runTask(item, itemIndex, slotIndex) {
+			return fn(item, itemIndex).then(
+				() => ({ ok: true, slotIndex }),
+				err => {
+					if (!firstError) firstError = err;
+					return { ok: false, slotIndex, err };
+				}
+			);
 		}
-		slots[result.slotIndex] = runTask(
-			items[nextItemIndex],
-			nextItemIndex,
-			result.slotIndex
-		);
-		nextItemIndex++;
+
+		const slots = [];
+		const slotCount = Math.min(parallelNum, itemsLength);
+		for (let i = 0; i < slotCount; i++) {
+			slots[i] = runTask(items[nextItemIndex], nextItemIndex, i);
+			nextItemIndex++;
+		}
+
+		while (nextItemIndex < itemsLength && !firstError && !aborted) {
+			const result = await Promise.race(slots);
+			if (!result.ok) {
+				break;
+			}
+			slots[result.slotIndex] = runTask(
+				items[nextItemIndex],
+				nextItemIndex,
+				result.slotIndex
+			);
+			nextItemIndex++;
+		}
+
+		await Promise.allSettled(slots);
+
+		if (firstError) throw firstError;
+	} finally {
+		if (signal && onAbort) {
+			signal.removeEventListener("abort", onAbort);
+		}
 	}
-
-	await Promise.allSettled(slots);
-
-	if (firstError) throw firstError;
 };
