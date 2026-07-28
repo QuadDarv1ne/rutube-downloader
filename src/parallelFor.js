@@ -36,6 +36,10 @@ exports.parallelFor = async function (parallelNum, items, fn, signal) {
 
 		while (nextItemIndex < itemsLength && !firstError && !aborted) {
 			const result = await Promise.race(slots);
+
+			// Check abort before assigning new task
+			if (aborted) break;
+
 			if (!result.ok) {
 				break;
 			}

@@ -1,11 +1,11 @@
 const m3u8Parser = require("m3u8-parser");
 const fetch = require("node-fetch");
+const { configure } = require("./configure");
 
-const DEFAULT_TIMEOUT = 60000;
-
-async function getText(url, msg = "fetch failed:", options = {}, timeout = DEFAULT_TIMEOUT) {
+async function getText(url, msg = "fetch failed:", options = {}, timeout) {
+	const effectiveTimeout = timeout ?? configure.manifestTimeout;
 	const controller = new AbortController();
-	const timer = setTimeout(() => controller.abort(), timeout);
+	const timer = setTimeout(() => controller.abort(), effectiveTimeout);
 	let onAbort;
 	if (options.signal) {
 		onAbort = () => controller.abort();

@@ -99,6 +99,7 @@
   "cli.help.parallel": "number of concurrent downloads, default 5",
   "cli.help.format": "output file format: mp4, mkv, avi, mov, webm (default mp4)",
   "cli.help.audio": "extract audio in format: mp3, wav, flac (after video download)",
+  "cli.help.outputDir": "download video to a specific directory",
   "cli.help.quality": "prompt for video quality, default selects best",
   "cli.help.locale": "interface language: ru, en, zh (default ru)",
   "cli.help.help": "show this help",
@@ -116,6 +117,7 @@
   "cli.error.unsupportedFormatCli": "Unsupported format. Available: mp4, mkv, avi, mov, webm",
   "cli.error.unsupportedAudioFormatCli": "Unsupported audio format. Available: mp3, wav, flac",
   "cli.error.unknownOption": "Unknown option: ",
+  "cli.error.outputDirRequired": "Output directory path is required for -o",
   "cli.error.invalidLocale": "Unsupported language. Available: ru, en, zh",
   "cli.error.invalidQuality": "Invalid choice, default quality selected",
 

@@ -25,6 +25,7 @@ exports.parseArgs = args => {
 		quality: null,
 		format: "mp4",
 		audioFormat: null,
+		outputDir: null,
 	};
 
 	if (args.length < 3) {
@@ -78,6 +79,9 @@ function buildHelp() {
 			_colors.yellowBright("-a <format>") +
 			" \t " + t("cli.help.audio"),
 		" " +
+			_colors.yellowBright("-o <dir>") +
+			" \t " + t("cli.help.outputDir"),
+		" " +
 			_colors.yellowBright("-l <locale>") +
 			" \t " + t("cli.help.locale"),
 		" " +
@@ -124,6 +128,11 @@ function buildHelp() {
 		" + " + t("cli.help.exampleAudioFlac"),
 		_colors.yellowBright(
 			"node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ -a flac"
+		),
+		"",
+		" + " + t("cli.help.outputDir"),
+		_colors.yellowBright(
+			"node index.js https://rutube.ru/video/ba1f267bcff6a3529889a6dd08bfb764/ -o D:\Downloads"
 		),
 		"",
 	];
@@ -192,6 +201,21 @@ function tryMatchOption(state, option, value) {
 		case "-h":
 			showHelp();
 			return process.exit(0);
+
+		case "--version":
+			const pkg = require("../package.json");
+			console.log(pkg.name + " v" + pkg.version);
+			return process.exit(0);
+
+		case "-o": {
+			const dir = value?.trim();
+			if (!dir)
+				throw new Error(
+					t("cli.error.outputDirRequired")
+				);
+			state.outputDir = dir;
+			return true;
+		}
 
 		default:
 			throw new Error(t("cli.error.unknownOption") + option);

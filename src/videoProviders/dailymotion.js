@@ -3,24 +3,48 @@ const { getManifest } = require("../m3u8Utils");
 const { selectVideoQuality } = require("../dialogue");
 const { downloadFile } = require("../downloadFile");
 const { sanitizeTitle } = require("./titleUtils");
+const { fetchWithTimeout } = require("./fetchTimeout");
 const { t } = require("../i18n");
 
 const regex_dailymotion = /^https?:\/\/(?:www\.)?dailymotion\.com\/video\/(\w+)/;
+
+/**
+ * Извлекает ID видео из URL Dailymotion (включая короткие ссылки dm.tv)
+ */
+function extractVideoId(url) {
+	try {
+		const u = new URL(url);
+		// dailymotion.com/video/k0abc123 или dailymotion.com/embed/video/k0abc123
+		const parts = u.pathname.split("/");
+		for (let i = 0; i < parts.length; i++) {
+			if (parts[i] === "video" && i + 1 < parts.length) {
+				return parts[i + 1];
+			}
+			if (parts[i] === "embed" && i + 2 < parts.length && parts[i + 1] === "video") {
+				return parts[i + 2];
+			}
+		}
+		// Короткие ссылки dm.tv/xxxxx
+		if (u.hostname === "dm.tv") {
+			return u.pathname.slice(1);
+		}
+	} catch {}
+	return null;
+}
 
 module.exports = {
 	mayUse: url => regex_dailymotion.test(url),
 
 	loadVideo: async cfg => {
-		const m = regex_dailymotion.exec(cfg.url);
-		if (!m) {
+		const videoId = extractVideoId(cfg.url);
+		if (!videoId) {
 			throw new Error(t("error.cannotParseUrl") + cfg.url);
 		}
 
-		const videoId = m[1];
-		// Dailymotion API endpoint for video info
-		const apiUrl = `https://dailymotion.com/player/video/${videoId}`;
+		// Dailymotion embed API
+		const apiUrl = `https://dailymotion.com/player/v2/video/${videoId}`;
 
-		const resp = await require("./fetchTimeout").fetchWithTimeout(
+		const resp = await fetchWithTimeout(
 			apiUrl,
 			{
 				headers: {
@@ -39,19 +63,18 @@ module.exports = {
 
 		const json = await resp.json();
 
-		if (!json?.qualities?.hls) {
+		if (!json?.qualities || !json.qualities.hls) {
 			throw new Error(t("error.cannotGetVideo") + cfg.url);
 		}
 
 		cfg.title = sanitizeTitle(cfg.title, json.title);
 
-		// Find the best HLS manifest URL
 		const qualities = json.qualities.hls;
 		if (!qualities || !Array.isArray(qualities)) {
 			throw new Error(t("error.cannotGetVideoQualities") + cfg.url);
 		}
 
-		// Get the highest quality manifest
+		// Find the highest quality manifest URL
 		let bestManifestUrl = null;
 		for (const quality of qualities) {
 			if (quality.url) {

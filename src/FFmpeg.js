@@ -1,6 +1,7 @@
 const { execFile, execFileSync } = require("node:child_process");
 const path = require("node:path");
 const { t } = require("./i18n");
+const { configure } = require("./configure");
 
 let ffmpegPath;
 let hideBannerSupported;

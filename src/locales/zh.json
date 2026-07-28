@@ -99,6 +99,7 @@
   "cli.help.parallel": "并发下载数，默认 5",
   "cli.help.format": "输出文件格式: mp4, mkv, avi, mov, webm (默认 mp4)",
   "cli.help.audio": "提取音频格式: mp3, wav, flac (在视频下载后)",
+  "cli.help.outputDir": "将视频下载到指定目录",
   "cli.help.quality": "询问视频画质，默认选择最佳",
   "cli.help.locale": "界面语言: ru, en, zh (默认 ru)",
   "cli.help.help": "显示此帮助信息",
@@ -116,6 +117,7 @@
   "cli.error.unsupportedFormatCli": "不支持的格式。可用: mp4, mkv, avi, mov, webm",
   "cli.error.unsupportedAudioFormatCli": "不支持的音频格式。可用: mp3, wav, flac",
   "cli.error.unknownOption": "未知选项: ",
+  "cli.error.outputDirRequired": "-o 需要指定输出目录路径",
   "cli.error.invalidLocale": "不支持的语言。可用: ru, en, zh",
   "cli.error.invalidQuality": "选择无效，已使用默认画质",
 

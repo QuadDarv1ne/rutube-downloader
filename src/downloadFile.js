@@ -22,8 +22,8 @@ const existsCount = list =>
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 exports.delay = delay;
 
-const MAX_SEGMENT_RETRIES = 5;
-const SEGMENT_TIMEOUT = 120000;
+const MAX_SEGMENT_RETRIES = configure.segmentRetries || 5;
+const SEGMENT_TIMEOUT = configure.segmentTimeout || 120000;
 
 exports.mergeAndConvert = async function (cfg, segmentFiles, title) {
 	const saveTitle = title || cfg.title;

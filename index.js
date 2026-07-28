@@ -50,7 +50,7 @@ async function run() {
 		const file = state.files[state.currentFileIndex];
 		const cfg = {
 			root: state.root,
-			video: state.video,
+			video: state.outputDir || state.video,
 			title: file.title,
 			parallelNum: state.parallelSegments,
 			url: file.url,

@@ -330,7 +330,7 @@ app.on("before-quit", () => {
 app.on("child-process-gone", (event, details) => {
 	logCrash(
 		`child-process-gone (${details.type}, reason=${details.reason})`,
-		details.error
+		details.message || details.error
 	);
 });
 

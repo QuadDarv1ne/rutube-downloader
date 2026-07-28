@@ -12,9 +12,16 @@ exports.configure = {
 	lastFolder:     "",
 	defaultFormat:  "mp4",
 	defaultAudioFormat: "",
+	// Timeout defaults (ms)
+	fetchTimeout:   60000,
+	manifestTimeout: 60000,
+	segmentTimeout: 120000,
+	// Retry defaults
+	segmentRetries: 5,
 	browserHeaders:  {
 		accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-		"accept-encoding": "gzip, deflate",
+		"accept-encoding": "gzip, deflate, br",
+		"accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
 		"sec-ch-ua": '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
 		"sec-ch-ua-mobile": "?0",
 		"sec-ch-ua-platform": "Windows",
