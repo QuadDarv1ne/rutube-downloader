@@ -12,6 +12,10 @@
 
 ![Вкладка YouTube](ui_youtube.png)
 
+![pic_1](img/pic_1.png)
+
+![pic_2](img/pic_2.png)
+
 ---
 
 ## Возможности
