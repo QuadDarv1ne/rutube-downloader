@@ -102,4 +102,4 @@ rutube-downloader/
 
 ## Лицензия
 
-MIT License
+Custom License
