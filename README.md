@@ -8,13 +8,9 @@
 
 Форк [ProjectSoft-STUDIONIONS/rutube-downloader](https://github.com/ProjectSoft-STUDIONIONS/rutube-downloader). Десктопное приложение и CLI для скачивания видео с **YouTube**, RuTube, VK Video, OK.ru, Aser.pro.
 
-![Вкладка RuTube, VK, OK, Aser](ui_ru.png)
+![Вкладка RuTube, VK, OK, Aser](img/pic_1.png)
 
-![Вкладка YouTube](ui_youtube.png)
-
-![pic_1](img/pic_1.png)
-
-![pic_2](img/pic_2.png)
+![Вкладка YouTube](img/pic_2.png)
 
 ---
 
