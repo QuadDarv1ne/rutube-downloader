@@ -1,11 +1,7 @@
 *
-!/.github
 !/.github/**
-!/app
 !/app/**
-!/bin
 !/bin/**
-!/src
 !/src/**
 !/.editorconfig
 !/.gitattributes
@@ -18,6 +14,5 @@
 !/README.md
 !/Manual.md
 !/rutube-dl.sublime-project
-!/.npmrc
 !/*.png
-!/img
+!/img/**
